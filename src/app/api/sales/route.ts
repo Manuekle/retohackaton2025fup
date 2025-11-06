@@ -1,6 +1,7 @@
 // src/app/api/sales/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withPrismaRetry } from "@/lib/database/prisma-retry";
 
 export async function GET() {
   try {
@@ -79,10 +80,52 @@ export async function POST(request: Request) {
         throw new Error("Se requiere información del cliente");
       }
 
-      // 2. Crear la venta
+      // 2. Obtener el clientTypeId del primer producto (o el más común si hay múltiples)
+      // Obtener los productos para determinar el clientTypeId
+      const productIds = items.map(
+        (item: { productId: string }) => item.productId,
+      );
+      const products = await withPrismaRetry(() =>
+        prisma.product.findMany({
+          where: {
+            id: {
+              in: productIds,
+            },
+          },
+          select: {
+            id: true,
+            clientTypeId: true,
+          },
+        }),
+      );
+
+      // Determinar el clientTypeId más común entre los productos
+      const clientTypeCounts = new Map<string, number>();
+      products.forEach((product) => {
+        if (product.clientTypeId) {
+          clientTypeCounts.set(
+            product.clientTypeId,
+            (clientTypeCounts.get(product.clientTypeId) || 0) + 1,
+          );
+        }
+      });
+
+      // Obtener el clientTypeId más común, o el del primer producto si no hay uno común
+      let selectedClientTypeId: string | null = null;
+      if (clientTypeCounts.size > 0) {
+        const sortedClientTypes = Array.from(clientTypeCounts.entries()).sort(
+          (a, b) => b[1] - a[1],
+        );
+        selectedClientTypeId = sortedClientTypes[0][0];
+      } else if (products.length > 0 && products[0].clientTypeId) {
+        selectedClientTypeId = products[0].clientTypeId;
+      }
+
+      // 3. Crear la venta
       const newSale = await prisma.sale.create({
         data: {
           customerId: customer.id,
+          clientTypeId: selectedClientTypeId,
           total: parseFloat(total),
           status: "completed",
           date: date ? new Date(date) : new Date(),
@@ -105,10 +148,11 @@ export async function POST(request: Request) {
         include: {
           items: true,
           customer: true,
+          clientType: true,
         },
       });
 
-      // 3. Actualizar el stock de los productos
+      // 4. Actualizar el stock de los productos
       for (const item of items) {
         await prisma.product.update({
           where: { id: item.productId },

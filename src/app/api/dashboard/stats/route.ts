@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth";
+import { withPrismaRetry } from "@/lib/database/prisma-retry";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -11,11 +12,13 @@ export async function GET() {
   }
 
   try {
-    const sales = await prisma.sale.findMany({
-      include: {
-        items: true,
-      },
-    });
+    const sales = await withPrismaRetry(() =>
+      prisma.sale.findMany({
+        include: {
+          items: true,
+        },
+      }),
+    );
 
     const totalRevenue = sales.reduce(
       (acc: number, sale: { total: number }) => acc + sale.total,

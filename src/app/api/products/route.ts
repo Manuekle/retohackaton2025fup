@@ -1,20 +1,23 @@
 // src/app/api/products/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withPrismaRetry } from "@/lib/database/prisma-retry";
 
 export async function GET() {
   try {
-    const products = await prisma.product.findMany({
-      include: {
-        category: true,
-        clientType: true,
-        sizes: {
-          include: {
-            size: true,
+    const products = await withPrismaRetry(() =>
+      prisma.product.findMany({
+        include: {
+          category: true,
+          clientType: true,
+          sizes: {
+            include: {
+              size: true,
+            },
           },
         },
-      },
-    });
+      }),
+    );
 
     // Transformar para incluir sizes como array de strings
     const productsWithSizes = products.map((product) => ({
@@ -36,39 +39,41 @@ export async function POST(request: Request) {
     const data = await request.json();
 
     // Obtener todas las tallas disponibles
-    const allSizes = await prisma.size.findMany();
+    const allSizes = await withPrismaRetry(() => prisma.size.findMany());
     const sizeMap = new Map(allSizes.map((s) => [s.name, s.id]));
 
     // Crear el producto
-    const product = await prisma.product.create({
-      data: {
-        name: data.name,
-        description: data.description,
-        price: parseFloat(data.price),
-        stock: parseInt(data.stock),
-        image: data.image || null,
-        categoryId: data.categoryId || null,
-        clientTypeId: data.clientTypeId || null,
-        sizes: {
-          create: (data.sizes || []).map((sizeName: string) => {
-            const sizeId = sizeMap.get(sizeName);
-            if (!sizeId) {
-              throw new Error(`Talla ${sizeName} no encontrada`);
-            }
-            return { sizeId };
-          }),
-        },
-      },
-      include: {
-        category: true,
-        clientType: true,
-        sizes: {
-          include: {
-            size: true,
+    const product = await withPrismaRetry(() =>
+      prisma.product.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          price: parseFloat(data.price),
+          stock: parseInt(data.stock),
+          image: data.image || null,
+          categoryId: data.categoryId || null,
+          clientTypeId: data.clientTypeId || null,
+          sizes: {
+            create: (data.sizes || []).map((sizeName: string) => {
+              const sizeId = sizeMap.get(sizeName);
+              if (!sizeId) {
+                throw new Error(`Talla ${sizeName} no encontrada`);
+              }
+              return { sizeId };
+            }),
           },
         },
-      },
-    });
+        include: {
+          category: true,
+          clientType: true,
+          sizes: {
+            include: {
+              size: true,
+            },
+          },
+        },
+      }),
+    );
 
     // Transformar para incluir sizes como array de strings
     const productWithSizes = {

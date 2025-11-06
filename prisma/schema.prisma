@@ -9,62 +9,62 @@ datasource db {
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  stock       Int         @default(0)
-  image       String?
-  categoryId  String?
-  category    Category?   @relation(fields: [categoryId], references: [id])
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  price        Float
+  stock        Int           @default(0)
+  image        String?
+  categoryId   String?
+  category     Category?     @relation(fields: [categoryId], references: [id])
   clientTypeId String?
-  clientType  ClientType? @relation(fields: [clientTypeId], references: [id])
-  sizes       ProductSize[]
-  saleItems   SaleItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  clientType   ClientType?   @relation(fields: [clientTypeId], references: [id])
+  sizes        ProductSize[]
+  saleItems    SaleItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model ClientType {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  products    Product[]
-  sales       Sale[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  sales     Sale[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Customer {
-  id          String      @id @default(cuid())
-  name        String
-  email       String?     @unique
-  phone       String?
-  address     String?
-  sales       Sale[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  phone     String?
+  address   String?
+  sales     Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Sale {
-  id          String     @id @default(cuid())
-  customerId  String?
-  customer    Customer?  @relation(fields: [customerId], references: [id])
+  id           String      @id @default(cuid())
+  customerId   String?
+  customer     Customer?   @relation(fields: [customerId], references: [id])
   clientTypeId String?
-  clientType  ClientType? @relation(fields: [clientTypeId], references: [id])
-  total       Float
-  status      String     @default("completed")
-  items       SaleItem[]
-  date        DateTime   @default(now())
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  clientType   ClientType? @relation(fields: [clientTypeId], references: [id])
+  total        Float
+  status       String      @default("completed")
+  items        SaleItem[]
+  date         DateTime    @default(now())
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model SaleItem {
@@ -93,11 +93,11 @@ model User {
 }
 
 model Size {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  products    ProductSize[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String        @id @default(cuid())
+  name      String        @unique
+  products  ProductSize[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model ProductSize {
@@ -111,3 +111,4 @@ model ProductSize {
 
   @@unique([productId, sizeId])
 }
+e

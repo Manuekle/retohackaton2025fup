@@ -20,7 +20,6 @@ export const customerSchema = z.object({
     .max(200, "La dirección no puede exceder 200 caracteres")
     .optional()
     .nullable(),
-  clientTypeId: z.string().optional().nullable(),
 });
 
 export type CustomerInput = z.infer<typeof customerSchema>;

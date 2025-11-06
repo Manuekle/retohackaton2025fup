@@ -50,7 +50,7 @@ export default function DashboardPageClient() {
         ] = await Promise.all([
           fetch("/api/dashboard/stats"),
           fetch("/api/dashboard/sales-by-category"),
-          fetch("/api/dashboard/sales-by-client-type"),
+          fetch("/api/dashboard/sales-by-size"),
           fetch("/api/dashboard/monthly-sales"),
           fetch("/api/dashboard/inventory"),
           fetch("/api/dashboard/recommendations"),
@@ -182,7 +182,7 @@ export default function DashboardPageClient() {
         <div className="border border-gray-200 dark:border-gray-800 rounded-xl">
           <div className="p-6 border-b border-gray-200 dark:border-gray-800">
             <h3 className="text-lg font-bold tracking-heading text-gray-900 dark:text-white">
-              Ventas por Tipo de Cliente
+              Ventas por Tallas
             </h3>
           </div>
           <div className="p-6">

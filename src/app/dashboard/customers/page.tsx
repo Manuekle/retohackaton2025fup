@@ -49,20 +49,10 @@ type Customer = {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
-  clientType?: {
-    id: string;
-    name: string;
-  } | null;
-};
-
-type ClientType = {
-  id: string;
-  name: string;
 };
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -78,29 +68,21 @@ export default function CustomersPage() {
       email: "",
       phone: "",
       address: "",
-      clientTypeId: "",
     },
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [customersRes, clientTypesRes] = await Promise.all([
-          fetch("/api/customers"),
-          fetch("/api/client-types"),
-        ]);
+        const customersRes = await fetch("/api/customers");
 
         if (!customersRes.ok) {
           throw new Error("Error al cargar clientes");
         }
 
-        const [customersData, clientTypesData] = await Promise.all([
-          customersRes.json(),
-          clientTypesRes.ok ? clientTypesRes.json() : [],
-        ]);
+        const customersData = await customersRes.json();
 
         setCustomers(customersData);
-        setClientTypes(clientTypesData);
       } catch {
         toast.error("Error al cargar los clientes", {
           description:
@@ -122,7 +104,6 @@ export default function CustomersPage() {
         email: customer.email || "",
         phone: customer.phone || "",
         address: customer.address || "",
-        clientTypeId: customer.clientType?.id || "",
       });
     } else {
       setEditingCustomer(null);
@@ -131,7 +112,6 @@ export default function CustomersPage() {
         email: "",
         phone: "",
         address: "",
-        clientTypeId: "",
       });
     }
     setIsDialogOpen(true);
@@ -145,7 +125,6 @@ export default function CustomersPage() {
       email: "",
       phone: "",
       address: "",
-      clientTypeId: "",
     });
   };
 
@@ -156,10 +135,6 @@ export default function CustomersPage() {
         email: data.email || null,
         phone: data.phone || null,
         address: data.address || null,
-        clientTypeId:
-          data.clientTypeId === "none" || !data.clientTypeId
-            ? null
-            : data.clientTypeId,
       };
 
       if (editingCustomer) {
@@ -247,15 +222,6 @@ export default function CustomersPage() {
       ),
     },
     {
-      key: "clientType",
-      header: "Tipo",
-      render: (_: unknown, row: Customer) => (
-        <span className="text-xs text-gray-600 dark:text-gray-400">
-          {row.clientType?.name || "Sin tipo"}
-        </span>
-      ),
-    },
-    {
       key: "address",
       header: "Dirección",
       render: (_value: unknown, row: Customer) =>
@@ -337,23 +303,10 @@ export default function CustomersPage() {
             customer.name.toLowerCase().includes(term) ||
             customer.email?.toLowerCase().includes(term) ||
             customer.phone?.toLowerCase().includes(term) ||
-            customer.address?.toLowerCase().includes(term) ||
-            customer.clientType?.name?.toLowerCase().includes(term)
+            customer.address?.toLowerCase().includes(term)
           );
         }}
-        filterOptions={[
-          {
-            key: "clientTypeId",
-            label: "Tipo de Cliente",
-            options: [
-              { value: "__all__", label: "Todos" },
-              ...clientTypes.map((type) => ({
-                value: type.id,
-                label: type.name,
-              })),
-            ],
-          },
-        ]}
+        filterOptions={[]}
         itemsPerPage={10}
         emptyMessage="No hay clientes registrados"
       />
@@ -443,37 +396,6 @@ export default function CustomersPage() {
                           value={field.value || ""}
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="clientTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Cliente</FormLabel>
-                      <Select
-                        value={field.value || "__none__"}
-                        onValueChange={(value) =>
-                          field.onChange(value === "__none__" ? "" : value)
-                        }
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-10 rounded-full">
-                            <SelectValue placeholder="Seleccionar tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">Sin tipo</SelectItem>
-                          {clientTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

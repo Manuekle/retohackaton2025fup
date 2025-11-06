@@ -1,24 +1,25 @@
 "use client";
 
 import {
-  Pie,
   PieChart,
+  Pie,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   Legend,
-  Cell,
 } from "recharts";
 import { useTheme } from "next-themes";
 
-export interface ClientTypeData {
+export interface SizeData {
   name: string;
   value: number;
 }
 
-interface SalesByClientTypeChartProps {
-  data: ClientTypeData[];
+interface SalesBySizeChartProps {
+  data: SizeData[];
 }
 
+// Colores para las tallas (paleta vibrante)
 const COLORS = [
   "#3b82f6", // blue
   "#10b981", // green
@@ -26,9 +27,17 @@ const COLORS = [
   "#ef4444", // red
   "#8b5cf6", // purple
   "#ec4899", // pink
+  "#06b6d4", // cyan
+  "#84cc16", // lime
+  "#f97316", // orange
+  "#6366f1", // indigo
+  "#14b8a6", // teal
+  "#a855f7", // violet
 ];
 
 const RADIAN = Math.PI / 180;
+
+// Función para renderizar etiquetas personalizadas en el gráfico de dona
 const renderCustomizedLabel = ({
   cx,
   cy,
@@ -46,27 +55,36 @@ const renderCustomizedLabel = ({
   percent: number;
   name: string;
 }) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.3;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  // Solo mostrar etiqueta si el porcentaje es mayor a 3%
+  if (percent < 0.03) return null;
 
   return (
     <text
       x={x}
       y={y}
-      fill="currentColor"
-      className="text-xs font-medium text-gray-700 dark:text-gray-300"
+      fill="white"
       textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
+      className="text-xs font-semibold"
+      style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
     >
-      {`${name}: ${(percent * 100).toFixed(0)}%`}
+      {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
 };
 
 interface TooltipProps {
   active?: boolean;
-  payload?: Array<{ value: number; name: string }>;
+  payload?: Array<{
+    value: number;
+    name: string;
+    payload: { name: string; value: number };
+    fill?: string;
+  }>;
 }
 
 const CustomTooltip = ({ active, payload }: TooltipProps) => {
@@ -75,40 +93,53 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
 
   if (active && payload && payload.length) {
     const entry = payload[0];
+    const data = entry.payload;
     const total = payload.reduce(
       (sum: number, p: { payload?: { value?: number } }) =>
         sum + (p.payload?.value || 0),
       0,
     );
-    const percentage =
-      total > 0 ? ((entry.payload?.value || 0) / total) * 100 : 0;
+    const percentage = total > 0 ? ((data.value || 0) / total) * 100 : 0;
 
     return (
       <div
-        className={`rounded-lg border p-2 shadow-lg ${
+        className={`rounded-lg border p-3 shadow-lg ${
           isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"
         }`}
       >
         <p
-          className={`text-xs font-medium mb-1 ${
-            isDark ? "text-gray-300" : "text-gray-700"
+          className={`text-sm font-semibold mb-2 ${
+            isDark ? "text-gray-100" : "text-gray-900"
           }`}
         >
-          {entry.name}
+          Talla: {data.name}
         </p>
-        <p className={`text-xs ${isDark ? "text-gray-300" : "text-gray-900"}`}>
-          <span style={{ color: entry.payload?.fill }}>●</span> Ventas:{" "}
-          <span className="font-semibold">
-            {entry.payload?.value.toLocaleString()} ({percentage.toFixed(1)}%)
-          </span>
-        </p>
+        <div className="space-y-1">
+          <p
+            className={`text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}
+          >
+            <span style={{ color: entry.fill }}>●</span>{" "}
+            <span className="font-medium">Artículos vendidos:</span>{" "}
+            <span className="font-bold text-blue-600 dark:text-blue-400">
+              {data.value.toLocaleString()}
+            </span>
+          </p>
+          <p
+            className={`text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}
+          >
+            <span className="font-medium">Porcentaje:</span>{" "}
+            <span className="font-bold text-green-600 dark:text-green-400">
+              {percentage.toFixed(1)}%
+            </span>
+          </p>
+        </div>
       </div>
     );
   }
   return null;
 };
 
-export function SalesByClientTypeChart({ data }: SalesByClientTypeChartProps) {
+export function SalesBySizeChart({ data }: SalesBySizeChartProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -116,18 +147,26 @@ export function SalesByClientTypeChart({ data }: SalesByClientTypeChartProps) {
     return (
       <div className="flex items-center justify-center h-80">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          No hay datos disponibles
+          No hay datos de ventas por tallas disponibles
         </p>
       </div>
     );
   }
 
-  // Sort by value descending
+  // Ordenar por valor descendente
   const sortedData = [...data].sort((a, b) => b.value - a.value);
   const total = sortedData.reduce((sum, item) => sum + item.value, 0);
 
+  // Obtener la talla más vendida y la menos vendida
+  const mostSold = sortedData[0];
+  const leastSold = sortedData[sortedData.length - 1];
+  const mostSoldPercentage =
+    total > 0 ? ((mostSold.value / total) * 100).toFixed(1) : "0";
+  const leastSoldPercentage =
+    total > 0 ? ((leastSold.value / total) * 100).toFixed(1) : "0";
+
   return (
-    <div className="w-full h-80">
+    <div className="w-full h-80 space-y-4">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -138,7 +177,7 @@ export function SalesByClientTypeChart({ data }: SalesByClientTypeChartProps) {
             label={renderCustomizedLabel}
             outerRadius={100}
             innerRadius={50}
-            paddingAngle={2}
+            paddingAngle={3}
             dataKey="value"
             nameKey="name"
           >
@@ -170,6 +209,66 @@ export function SalesByClientTypeChart({ data }: SalesByClientTypeChartProps) {
           />
         </PieChart>
       </ResponsiveContainer>
+
+      {/* Información de tallas más y menos vendidas */}
+      <div className="flex items-center justify-center gap-6 mt-4">
+        <div
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+            isDark
+              ? "bg-green-900/20 border-green-700/50"
+              : "bg-green-50 border-green-200"
+          }`}
+        >
+          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          <div>
+            <p
+              className={`text-xs font-medium ${
+                isDark ? "text-green-300" : "text-green-700"
+              }`}
+            >
+              Más vendida
+            </p>
+            <p
+              className={`text-xs font-bold ${
+                isDark ? "text-green-200" : "text-green-800"
+              }`}
+            >
+              {mostSold.name}: {mostSoldPercentage}%
+            </p>
+          </div>
+        </div>
+
+        <div
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+            isDark
+              ? "bg-red-900/20 border-red-700/50"
+              : "bg-red-50 border-red-200"
+          }`}
+        >
+          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <div>
+            <p
+              className={`text-xs font-medium ${
+                isDark ? "text-red-300" : "text-red-700"
+              }`}
+            >
+              Menos vendida
+            </p>
+            <p
+              className={`text-xs font-bold ${
+                isDark ? "text-red-200" : "text-red-800"
+              }`}
+            >
+              {leastSold.name}: {leastSoldPercentage}%
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
+}
+
+// Mantener el nombre anterior para compatibilidad
+export function SalesByClientTypeChart({ data }: { data: SizeData[] }) {
+  return <SalesBySizeChart data={data} />;
 }

@@ -14,37 +14,42 @@ export async function GET() {
   try {
     const saleItems = await withPrismaRetry(() =>
       prisma.saleItem.findMany({
-        include: {
-          product: {
-            include: {
-              category: true,
-            },
+        where: {
+          size: {
+            not: null,
           },
+        },
+        select: {
+          size: true,
+          quantity: true,
         },
       }),
     );
 
-    const categorySales = saleItems.reduce(
+    // Agrupar por talla
+    const salesBySize = saleItems.reduce(
       (
-        acc: Record<string, { name: string; total: number }>,
-        item: {
-          product: { category: { name: string } | null };
-          quantity: number;
-        },
+        acc: Record<string, { name: string; value: number }>,
+        item: { size: string | null; quantity: number },
       ) => {
-        const categoryName = item.product.category?.name || "Sin categoría";
-        if (!acc[categoryName]) {
-          acc[categoryName] = { name: categoryName, total: 0 };
+        if (!item.size) return acc;
+
+        const sizeName = item.size;
+        if (!acc[sizeName]) {
+          acc[sizeName] = { name: sizeName, value: 0 };
         }
-        acc[categoryName].total += item.quantity;
+        acc[sizeName].value += item.quantity;
         return acc;
       },
       {},
     );
 
-    return NextResponse.json(Object.values(categorySales));
+    // Convertir a array y ordenar por valor descendente
+    const result = Object.values(salesBySize).sort((a, b) => b.value - a.value);
+
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Error al obtener las ventas por categoría:", error);
+    console.error("Error al obtener las ventas por talla:", error);
     return NextResponse.json(
       { error: "Error Interno del Servidor" },
       { status: 500 },
