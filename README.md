@@ -23,7 +23,7 @@ Este proyecto fue desarrollado por un equipo de 3 integrantes:
 ## 🚀 Características Principales
 
 - **Dashboard Interactivo:** Visualización clara de KPIs (Key Performance Indicators) como ingresos totales, artículos vendidos y total de transacciones.
-- **Análisis de Ventas:** Gráficos que muestran las ventas por categoría, por tipo de cliente (género) y las tendencias de ventas mensuales.
+- **Análisis de Ventas:** Gráficos que muestran las ventas por categoría, por tallas (con identificación de la más y menos vendida) y las tendencias de ventas mensuales.
 - **Recomendaciones Automáticas:** Sistema que identifica productos con alta y baja rotación, sugiriendo acciones como aumentar stock o aplicar descuentos.
 - **Autenticación Segura:** Sistema de inicio de sesión con credenciales (email y contraseña) para proteger el acceso al dashboard.
 - **Roles de Usuario:** Sistema de roles (admin y customer) con acceso diferenciado a funcionalidades.
@@ -546,18 +546,21 @@ Obtiene ventas agrupadas por categoría.
 ]
 ```
 
-#### `GET /api/dashboard/sales-by-client-type`
+#### `GET /api/dashboard/sales-by-size`
 
-Obtiene ventas agrupadas por tipo de cliente.
+Obtiene ventas agrupadas por talla.
 
 **Response:** `200 OK`
 
 ```json
 [
   {
-    "clientType": "Mayorista",
-    "total": 3000000,
-    "quantity": 90
+    "name": "M",
+    "value": 45
+  },
+  {
+    "name": "L",
+    "value": 30
   }
 ]
 ```
@@ -803,6 +806,8 @@ npm run test:e2e     # Ejecuta tests E2E
 - Relación many-to-many entre productos y tallas
 - Gestión centralizada de tallas disponibles
 - Filtrado inteligente de tallas según el género del producto
+- Gráfico tipo dona que muestra ventas por tallas
+- Identificación automática de la talla más y menos vendida con porcentajes
 
 ### Mejoras en la Tienda
 
@@ -810,6 +815,16 @@ npm run test:e2e     # Ejecuta tests E2E
 - Modal detallado de productos con información completa
 - Filtros por categoría y género
 - Búsqueda de productos en tiempo real
+- Validación de stock al agregar productos al carrito
+- Registro automático de usuarios durante el checkout si no están autenticados
+- Asignación automática del tipo de cliente en las ventas basado en los productos
+
+### Sistema de Reintentos para Prisma Accelerate
+
+- Manejo robusto de errores de conexión con Prisma Accelerate
+- Reintentos automáticos con backoff exponencial para operaciones de base de datos
+- Función auxiliar `withPrismaRetry` para operaciones críticas
+- Mejora la resiliencia de la aplicación ante errores temporales de red
 
 ## 🤝 Contribuir
 
