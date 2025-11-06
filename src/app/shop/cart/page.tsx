@@ -7,22 +7,10 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useCart } from "@/lib/hooks/use-cart";
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { PageLoading } from "@/components/dashboard/LoadingSkeleton";
-
-type ClientType = {
-  id: string;
-  name: string;
-};
 
 export default function CartPage() {
   const router = useRouter();
@@ -35,10 +23,7 @@ export default function CartPage() {
     getTotal,
     isLoading,
   } = useCart();
-  const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
-  const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLoadingClientTypes, setIsLoadingClientTypes] = useState(true);
 
   // Datos del cliente para la compra
   const [customerName, setCustomerName] = useState(session?.user?.name || "");
@@ -48,25 +33,6 @@ export default function CartPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerPassword, setCustomerPassword] = useState("");
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Cargar tipos de cliente
-        const clientTypesRes = await fetch("/api/client-types");
-        if (clientTypesRes.ok) {
-          const clientTypesData = await clientTypesRes.json();
-          setClientTypes(clientTypesData);
-        }
-      } catch {
-        toast.error("Error al cargar los datos");
-      } finally {
-        setIsLoadingClientTypes(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   // Prellenar campos con datos del usuario si está logueado
   useEffect(() => {
@@ -219,7 +185,6 @@ export default function CartPage() {
           customerEmail: customerEmail.trim(),
           customerPhone: customerPhone.trim() || undefined,
           customerAddress: customerAddress.trim() || undefined,
-          clientTypeId: selectedClientType || undefined,
           items,
           total: getTotal().toString(),
         }),
@@ -460,7 +425,7 @@ export default function CartPage() {
 
               {/* Información del Cliente */}
               <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-                <h3 className="text-xs font-bold tracking-heading mb-4 text-gray-900 dark:text-white">
+                <h3 className="text-lg font-bold tracking-heading mb-4 text-gray-900 dark:text-white">
                   Información del Cliente
                 </h3>
 
@@ -519,13 +484,40 @@ export default function CartPage() {
                       </div>
                     </>
                   ) : (
-                    // Si el usuario NO tiene sesión (se registra automáticamente), mostrar teléfono, dirección y contraseña
+                    // Si el usuario NO tiene sesión (se registra automáticamente), mostrar nombre, email, teléfono, dirección y contraseña
                     <>
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-3">
                         <p className="text-xs text-blue-700 dark:text-blue-300">
                           <strong>Registro automático:</strong> Se creará una
-                          cuenta con tu nombre y email. Solo necesitamos:
+                          cuenta con tu información. Completa los siguientes
+                          campos:
                         </p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Nombre completo{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          placeholder="Ingresa tu nombre completo"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                          required
+                        />
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
@@ -568,33 +560,6 @@ export default function CartPage() {
                         </p>
                       </div>
                     </>
-                  )}
-                  {clientTypes.length > 0 && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                        Tipo de Cliente (opcional)
-                      </label>
-                      <Select
-                        value={selectedClientType || "__none__"}
-                        onValueChange={(value) =>
-                          setSelectedClientType(
-                            value === "__none__" ? "" : value,
-                          )
-                        }
-                      >
-                        <SelectTrigger className="rounded-full h-10 text-xs">
-                          <SelectValue placeholder="Seleccionar tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">Sin tipo</SelectItem>
-                          {clientTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   )}
                 </div>
               </div>
