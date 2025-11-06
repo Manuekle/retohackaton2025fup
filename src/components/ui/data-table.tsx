@@ -32,7 +32,7 @@ interface Column<T> {
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  searchKey?: keyof T | string;
+  searchKey?: keyof T | string | (keyof T | string)[];
   searchPlaceholder?: string;
   filterOptions?: {
     key: keyof T | string;
@@ -42,6 +42,7 @@ interface DataTableProps<T> {
   itemsPerPage?: number;
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
+  customFilter?: (item: T, searchTerm: string) => boolean;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -53,6 +54,7 @@ export function DataTable<T extends Record<string, unknown>>({
   itemsPerPage = 10,
   onRowClick,
   emptyMessage = "No hay datos disponibles",
+  customFilter,
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,16 +65,70 @@ export function DataTable<T extends Record<string, unknown>>({
 
   if (searchTerm && searchKey) {
     filteredData = filteredData.filter((item) => {
-      const value = item[searchKey as keyof T];
-      return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+      if (customFilter) {
+        return customFilter(item, searchTerm);
+      }
+
+      if (Array.isArray(searchKey)) {
+        // Búsqueda en múltiples campos
+        return searchKey.some((key) => {
+          const value = item[key as keyof T];
+          return String(value || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+        });
+      } else {
+        // Búsqueda en un solo campo
+        const value = item[searchKey as keyof T];
+        return String(value || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      }
     });
   }
 
   filterOptions.forEach((filter) => {
-    if (filters[filter.key as string]) {
-      filteredData = filteredData.filter(
-        (item) => item[filter.key as keyof T] === filters[filter.key as string],
-      );
+    const filterValue = filters[filter.key as string];
+    // Ignorar valores especiales que representan "todos"
+    if (filterValue && filterValue !== "__all__") {
+      filteredData = filteredData.filter((item) => {
+        // Filtros personalizados para campos específicos
+        if (filter.key === "stock") {
+          const product = item as { stock?: number };
+          switch (filterValue) {
+            case "in-stock":
+              return (product.stock ?? 0) > 0;
+            case "out-of-stock":
+              return (product.stock ?? 0) === 0;
+            case "low-stock":
+              return (product.stock ?? 0) > 0 && (product.stock ?? 0) < 10;
+            default:
+              return true;
+          }
+        }
+
+        // Filtro normal por igualdad
+        const itemValue = item[filter.key as keyof T];
+
+        // Para campos que terminan en "Id" y tienen un objeto relacionado
+        if (filter.key.toString().endsWith("Id")) {
+          const baseKey = filter.key.toString().replace("Id", "");
+          const relatedObject = item[baseKey as keyof T];
+          if (typeof relatedObject === "object" && relatedObject !== null) {
+            const nestedItem = relatedObject as { id?: string };
+            return nestedItem.id === filterValue;
+          }
+          // Si no hay objeto relacionado, buscar directamente en el campo Id
+          return String(itemValue) === filterValue;
+        }
+
+        if (typeof itemValue === "object" && itemValue !== null) {
+          // Para objetos anidados, buscar por ID
+          const nestedItem = itemValue as { id?: string };
+          return nestedItem.id === filterValue;
+        }
+        return String(itemValue) === filterValue;
+      });
     }
   });
 
@@ -85,7 +141,7 @@ export function DataTable<T extends Record<string, unknown>>({
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({
       ...prev,
-      [key]: value === "all" ? "" : value,
+      [key]: value === "__all__" ? "" : value,
     }));
     setCurrentPage(1);
   };
@@ -119,27 +175,30 @@ export function DataTable<T extends Record<string, unknown>>({
           )}
           {filterOptions.length > 0 && (
             <div className="flex gap-2 flex-wrap">
-              {filterOptions.map((filter) => (
-                <Select
-                  key={filter.key as string}
-                  value={filters[filter.key as string] || "all"}
-                  onValueChange={(value) =>
-                    handleFilterChange(filter.key as string, value)
-                  }
-                >
-                  <SelectTrigger className="w-[180px] h-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-full">
-                    <SelectValue placeholder={filter.label} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {filter.options.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ))}
+              {filterOptions.map((filter) => {
+                const firstOption = filter.options[0];
+                const defaultValue = firstOption?.value || "__all__";
+                return (
+                  <Select
+                    key={filter.key as string}
+                    value={filters[filter.key as string] || defaultValue}
+                    onValueChange={(value) =>
+                      handleFilterChange(filter.key as string, value)
+                    }
+                  >
+                    <SelectTrigger className="w-[180px] h-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-full">
+                      <SelectValue placeholder={filter.label} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filter.options.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })}
               {hasActiveFilters && (
                 <Button
                   variant="ghost"

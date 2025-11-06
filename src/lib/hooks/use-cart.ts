@@ -9,6 +9,7 @@ export type CartItem = {
   quantity: number;
   size?: string;
   image?: string;
+  stock: number;
 };
 
 export function useCart() {
@@ -40,13 +41,26 @@ export function useCart() {
     );
 
     if (existingItem) {
+      // Validar que no exceda el stock
+      const newQuantity = existingItem.quantity + item.quantity;
+      if (newQuantity > item.stock) {
+        throw new Error(
+          `No hay suficiente stock. Stock disponible: ${item.stock}`,
+        );
+      }
       const updatedCart = cart.map((cartItem) =>
         cartItem.productId === item.productId && cartItem.size === item.size
-          ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
+          ? { ...cartItem, quantity: newQuantity, stock: item.stock }
           : cartItem,
       );
       saveCart(updatedCart);
     } else {
+      // Validar que la cantidad inicial no exceda el stock
+      if (item.quantity > item.stock) {
+        throw new Error(
+          `No hay suficiente stock. Stock disponible: ${item.stock}`,
+        );
+      }
       saveCart([...cart, item]);
     }
   };
@@ -63,9 +77,31 @@ export function useCart() {
     quantity: number,
     size?: string,
   ) => {
-    if (quantity <= 0) {
+    // Validar que la cantidad no sea negativa
+    if (quantity < 0) {
+      return;
+    }
+
+    // Si la cantidad es 0 o menor, eliminar del carrito
+    if (quantity === 0) {
       removeFromCart(productId, size);
       return;
+    }
+
+    // Buscar el item en el carrito para obtener el stock
+    const cartItem = cart.find(
+      (item) => item.productId === productId && item.size === size,
+    );
+
+    if (!cartItem) {
+      return;
+    }
+
+    // Validar que no exceda el stock
+    if (quantity > cartItem.stock) {
+      throw new Error(
+        `No hay suficiente stock. Stock disponible: ${cartItem.stock}`,
+      );
     }
 
     const updatedCart = cart.map((item) =>

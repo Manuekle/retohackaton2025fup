@@ -176,8 +176,19 @@ export default function SalesPage() {
       <DataTable
         data={sales}
         columns={columns}
-        searchKey="id"
-        searchPlaceholder="Buscar por ID, cliente o estado..."
+        searchKey={["id", "customer.name", "customer.email"]}
+        searchPlaceholder="Buscar por ID, cliente, email..."
+        customFilter={(item, searchTerm) => {
+          const sale = item as Sale;
+          const term = searchTerm.toLowerCase();
+          return (
+            sale.id.toLowerCase().includes(term) ||
+            sale.customer?.name?.toLowerCase().includes(term) ||
+            sale.customer?.email?.toLowerCase().includes(term) ||
+            formatCurrency(sale.total).toLowerCase().includes(term) ||
+            sale.status.toLowerCase().includes(term)
+          );
+        }}
         filterOptions={[
           {
             key: "status",

@@ -328,8 +328,32 @@ export default function CustomersPage() {
       <DataTable
         data={customers}
         columns={columns}
-        searchKey="name"
-        searchPlaceholder="Buscar clientes por nombre, email o teléfono..."
+        searchKey={["name", "email", "phone", "address"]}
+        searchPlaceholder="Buscar por nombre, email, teléfono o dirección..."
+        customFilter={(item, searchTerm) => {
+          const customer = item as Customer;
+          const term = searchTerm.toLowerCase();
+          return (
+            customer.name.toLowerCase().includes(term) ||
+            customer.email?.toLowerCase().includes(term) ||
+            customer.phone?.toLowerCase().includes(term) ||
+            customer.address?.toLowerCase().includes(term) ||
+            customer.clientType?.name?.toLowerCase().includes(term)
+          );
+        }}
+        filterOptions={[
+          {
+            key: "clientTypeId",
+            label: "Tipo de Cliente",
+            options: [
+              { value: "__all__", label: "Todos" },
+              ...clientTypes.map((type) => ({
+                value: type.id,
+                label: type.name,
+              })),
+            ],
+          },
+        ]}
         itemsPerPage={10}
         emptyMessage="No hay clientes registrados"
       />
@@ -431,9 +455,9 @@ export default function CustomersPage() {
                     <FormItem>
                       <FormLabel>Tipo de Cliente</FormLabel>
                       <Select
-                        value={field.value || "none"}
+                        value={field.value || "__none__"}
                         onValueChange={(value) =>
-                          field.onChange(value === "none" ? "" : value)
+                          field.onChange(value === "__none__" ? "" : value)
                         }
                       >
                         <FormControl>
@@ -442,7 +466,7 @@ export default function CustomersPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">Sin tipo</SelectItem>
+                          <SelectItem value="__none__">Sin tipo</SelectItem>
                           {clientTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}

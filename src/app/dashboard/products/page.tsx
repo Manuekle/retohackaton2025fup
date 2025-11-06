@@ -680,8 +680,42 @@ export default function ProductsPage() {
       <DataTable
         data={products}
         columns={columns}
-        searchKey="name"
-        searchPlaceholder="Buscar productos..."
+        searchKey={["name", "description", "category.name"]}
+        searchPlaceholder="Buscar por nombre, descripción o categoría..."
+        customFilter={(item, searchTerm) => {
+          const product = item as Product;
+          const term = searchTerm.toLowerCase();
+          return (
+            product.name.toLowerCase().includes(term) ||
+            product.description?.toLowerCase().includes(term) ||
+            product.category?.name?.toLowerCase().includes(term) ||
+            product.price.toString().includes(term) ||
+            product.stock.toString().includes(term)
+          );
+        }}
+        filterOptions={[
+          {
+            key: "categoryId",
+            label: "Categoría",
+            options: [
+              { value: "__all__", label: "Todas" },
+              ...categories.map((cat) => ({
+                value: cat.id,
+                label: cat.name,
+              })),
+            ],
+          },
+          {
+            key: "stock",
+            label: "Stock",
+            options: [
+              { value: "__all__", label: "Todos" },
+              { value: "in-stock", label: "En Stock (>0)" },
+              { value: "out-of-stock", label: "Sin Stock (0)" },
+              { value: "low-stock", label: "Stock Bajo (<10)" },
+            ],
+          },
+        ]}
         itemsPerPage={10}
         emptyMessage="No hay productos registrados"
       />
@@ -943,9 +977,9 @@ export default function ProductsPage() {
                       <FormItem>
                         <FormLabel>Categoría</FormLabel>
                         <Select
-                          value={field.value || "none"}
+                          value={field.value || "__none__"}
                           onValueChange={(value) =>
-                            field.onChange(value === "none" ? "" : value)
+                            field.onChange(value === "__none__" ? "" : value)
                           }
                           disabled={!selectedGender}
                         >
@@ -961,7 +995,9 @@ export default function ProductsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">Sin categoría</SelectItem>
+                            <SelectItem value="__none__">
+                              Sin categoría
+                            </SelectItem>
                             {categoriesToShow.map((category) => (
                               <SelectItem key={category.id} value={category.id}>
                                 {category.name}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ export default function CartPage() {
   );
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [customerPassword, setCustomerPassword] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,6 +109,99 @@ export default function CartPage() {
     setIsProcessing(true);
 
     try {
+      // Si el usuario no ha iniciado sesión, registrarlo automáticamente
+      if (!session?.user) {
+        try {
+          // Usar la contraseña proporcionada o generar una temporal aleatoria
+          const tempPassword =
+            customerPassword.trim() ||
+            Math.random().toString(36).slice(-12) + "A1!";
+
+          const registerResponse = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: customerName.trim(),
+              email: customerEmail.trim(),
+              password: tempPassword,
+            }),
+          });
+
+          if (registerResponse.ok) {
+            // Usuario registrado exitosamente, ahora hacer login automático
+            const loginResult = await signIn("credentials", {
+              redirect: false,
+              email: customerEmail.trim(),
+              password: tempPassword,
+            });
+
+            if (loginResult?.error) {
+              // Error al hacer login, pero continuar con la venta
+              console.warn(
+                "Error al iniciar sesión automáticamente:",
+                loginResult.error,
+              );
+              toast.success("Cuenta creada automáticamente", {
+                description:
+                  "Se ha creado una cuenta con tu información. Puedes iniciar sesión después.",
+              });
+            } else {
+              // Login exitoso
+              toast.success("Cuenta creada e iniciada automáticamente", {
+                description:
+                  "Se ha creado una cuenta y se ha iniciado sesión con tu información.",
+              });
+            }
+          } else if (registerResponse.status === 409) {
+            // El usuario ya existe, intentar hacer login solo si proporcionó contraseña
+            if (customerPassword.trim()) {
+              const loginResult = await signIn("credentials", {
+                redirect: false,
+                email: customerEmail.trim(),
+                password: customerPassword.trim(),
+              });
+
+              if (loginResult?.error) {
+                // No se pudo hacer login, pero continuar con la venta
+                console.warn(
+                  "El usuario ya existe pero no se pudo iniciar sesión:",
+                  loginResult.error,
+                );
+                toast.info("Usuario ya existe", {
+                  description:
+                    "El usuario ya existe. Si proporcionaste la contraseña correcta, se iniciará sesión automáticamente.",
+                });
+              } else {
+                // Login exitoso
+                toast.success("Sesión iniciada", {
+                  description: "Se ha iniciado sesión con tu cuenta existente.",
+                });
+              }
+            } else {
+              // Usuario existe pero no proporcionó contraseña, no podemos hacer login
+              toast.info("Usuario ya existe", {
+                description:
+                  "El usuario ya existe. Para iniciar sesión, proporciona tu contraseña.",
+              });
+            }
+          } else {
+            // Error al registrar, pero continuar con la venta
+            const errorData = await registerResponse.json();
+            console.warn(
+              "Error al registrar usuario automáticamente:",
+              errorData,
+            );
+            // Continuar con la venta aunque no se haya registrado el usuario
+          }
+        } catch (registerError) {
+          // Error al intentar registrar, pero continuar con la venta
+          console.warn("Error al registrar usuario:", registerError);
+          // Continuar con la venta
+        }
+      }
+
       const items = cart.map((item) => ({
         productId: item.productId,
         quantity: item.quantity.toString(),
@@ -255,14 +350,26 @@ export default function CartPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                            onClick={() =>
-                              updateQuantity(
-                                item.productId,
-                                item.quantity - 1,
-                                item.size,
-                              )
-                            }
+                            className="h-7 w-7 p-0 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => {
+                              const newQuantity = item.quantity - 1;
+                              if (newQuantity >= 0) {
+                                try {
+                                  updateQuantity(
+                                    item.productId,
+                                    newQuantity,
+                                    item.size,
+                                  );
+                                } catch (error) {
+                                  toast.error(
+                                    error instanceof Error
+                                      ? error.message
+                                      : "Error al actualizar la cantidad",
+                                  );
+                                }
+                              }
+                            }}
+                            disabled={item.quantity <= 0}
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </Button>
@@ -272,14 +379,24 @@ export default function CartPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-                            onClick={() =>
-                              updateQuantity(
-                                item.productId,
-                                item.quantity + 1,
-                                item.size,
-                              )
-                            }
+                            className="h-7 w-7 p-0 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => {
+                              const newQuantity = item.quantity + 1;
+                              try {
+                                updateQuantity(
+                                  item.productId,
+                                  newQuantity,
+                                  item.size,
+                                );
+                              } catch (error) {
+                                toast.error(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Error al actualizar la cantidad",
+                                );
+                              }
+                            }}
+                            disabled={item.quantity >= item.stock}
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </Button>
@@ -348,70 +465,128 @@ export default function CartPage() {
                 </h3>
 
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                      Nombre completo <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      placeholder="Ingresa tu nombre completo"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="rounded-full h-10 text-xs"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="rounded-full h-10 text-xs"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                      Teléfono (opcional)
-                    </label>
-                    <Input
-                      type="tel"
-                      placeholder="+57 300 000 0000"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="rounded-full h-10 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-                      Dirección (opcional)
-                    </label>
-                    <Input
-                      placeholder="Dirección de entrega"
-                      value={customerAddress}
-                      onChange={(e) => setCustomerAddress(e.target.value)}
-                      className="rounded-full h-10 text-xs"
-                    />
-                  </div>
+                  {session?.user ? (
+                    // Si el usuario tiene sesión, mostrar todos los campos
+                    <>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Nombre completo{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          placeholder="Ingresa tu nombre completo"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Teléfono (opcional)
+                        </label>
+                        <Input
+                          type="tel"
+                          placeholder="+57 300 000 0000"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Dirección (opcional)
+                        </label>
+                        <Input
+                          placeholder="Dirección de entrega"
+                          value={customerAddress}
+                          onChange={(e) => setCustomerAddress(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    // Si el usuario NO tiene sesión (se registra automáticamente), mostrar teléfono, dirección y contraseña
+                    <>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-3">
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          <strong>Registro automático:</strong> Se creará una
+                          cuenta con tu nombre y email. Solo necesitamos:
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Teléfono
+                        </label>
+                        <Input
+                          type="tel"
+                          placeholder="+57 300 000 0000"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Dirección
+                        </label>
+                        <Input
+                          placeholder="Dirección de entrega"
+                          value={customerAddress}
+                          onChange={(e) => setCustomerAddress(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                          Contraseña (opcional)
+                        </label>
+                        <Input
+                          type="password"
+                          placeholder="Crea una contraseña para tu cuenta"
+                          value={customerPassword}
+                          onChange={(e) => setCustomerPassword(e.target.value)}
+                          className="rounded-full h-10 text-xs"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Si no proporcionas una contraseña, se creará una
+                          automáticamente. Podrás usar "Recuperar contraseña"
+                          para acceder.
+                        </p>
+                      </div>
+                    </>
+                  )}
                   {clientTypes.length > 0 && (
                     <div>
                       <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
                         Tipo de Cliente (opcional)
                       </label>
                       <Select
-                        value={selectedClientType || "none"}
+                        value={selectedClientType || "__none__"}
                         onValueChange={(value) =>
-                          setSelectedClientType(value === "none" ? "" : value)
+                          setSelectedClientType(
+                            value === "__none__" ? "" : value,
+                          )
                         }
                       >
                         <SelectTrigger className="rounded-full h-10 text-xs">
                           <SelectValue placeholder="Seleccionar tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Sin tipo</SelectItem>
+                          <SelectItem value="__none__">Sin tipo</SelectItem>
                           {clientTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}

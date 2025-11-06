@@ -171,22 +171,30 @@ export default function ShopPage() {
       return;
     }
 
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: 1,
-      size: size || undefined,
-    });
+    try {
+      addToCart({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        size: size || undefined,
+        stock: product.stock,
+        image: product.image || undefined,
+      });
 
-    toast.success("Producto agregado al carrito", {
-      description: `${product.name}${size ? ` (Talla: ${size})` : ""} agregado correctamente.`,
-    });
+      toast.success("Producto agregado al carrito", {
+        description: `${product.name}${size ? ` (Talla: ${size})` : ""} agregado correctamente.`,
+      });
 
-    // Cerrar el dialog si está abierto
-    setIsProductDialogOpen(false);
-    setSelectedProduct(null);
-    setSelectedSize(undefined);
+      // Cerrar el dialog si está abierto
+      setIsProductDialogOpen(false);
+      setSelectedProduct(null);
+      setSelectedSize(undefined);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Error al agregar al carrito",
+      );
+    }
   };
 
   const handleProductClick = (product: Product) => {
