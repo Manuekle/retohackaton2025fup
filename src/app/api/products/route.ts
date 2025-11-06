@@ -45,6 +45,7 @@ export async function POST(request: Request) {
         description: data.description,
         price: parseFloat(data.price),
         stock: parseInt(data.stock),
+        image: data.image || null,
         categoryId: data.categoryId || null,
         sizes: {
           create: (data.sizes || []).map((sizeName: string) => {

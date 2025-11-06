@@ -44,6 +44,7 @@ type Product = {
   description?: string;
   price: number;
   stock: number;
+  image?: string | null;
   sizes?: string[];
   category?: {
     id: string;
@@ -575,6 +576,18 @@ export default function ShopPage() {
                 className="group border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 cursor-pointer"
                 onClick={() => handleProductClick(product)}
               >
+                {product.image && (
+                  <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
                 <div className="p-5">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-xs">
                     {product.name}
@@ -627,6 +640,20 @@ export default function ShopPage() {
               </DialogHeader>
 
               <div className="space-y-6 py-4">
+                {/* Image */}
+                {selectedProduct.image && (
+                  <div className="w-full h-64 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+                    <img
+                      src={selectedProduct.image}
+                      alt={selectedProduct.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+
                 {/* Price and Stock */}
                 <div className="flex items-center justify-between">
                   <div>

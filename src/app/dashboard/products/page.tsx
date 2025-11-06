@@ -37,7 +37,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  Upload,
+  Image as ImageIcon,
+  X,
+} from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { PageLoading } from "@/components/dashboard/LoadingSkeleton";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +58,7 @@ type Product = {
   description?: string;
   price: number;
   stock: number;
+  image?: string | null;
   sizes?: string[];
   category?: {
     id: string;
@@ -76,6 +85,10 @@ export default function ProductsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const form = useForm<ProductInput>({
     resolver: zodResolver(productSchema),
@@ -87,6 +100,7 @@ export default function ProductsPage() {
       sizes: [],
       categoryId: "",
       gender: "",
+      image: "",
     },
   });
 
@@ -204,10 +218,39 @@ export default function ProductsPage() {
     fetchData();
   }, []);
 
-  // Función para detectar el género basado en las tallas del producto
-  const detectGenderFromSizes = (sizes: string[]): string => {
-    if (!sizes || sizes.length === 0) return "";
+  // Función para detectar el género basado en la categoría y tallas del producto
+  const detectGenderFromProduct = (product: Product): string => {
+    if (!product) return "";
 
+    const categoryName = product.category?.name;
+    const sizes = product.sizes || [];
+
+    // Detectar basándose en categorías exclusivas primero
+    if (categoryName) {
+      // Categorías exclusivas de mujer (solo mujer)
+      if (["Faldas", "Pijamas", "Terceras Piezas"].includes(categoryName)) {
+        return "mujer";
+      }
+      // Categorías exclusivas de niña (solo niña)
+      // Vestidos puede ser mujer o niña, pero si tiene tallas numéricas es niña
+      if (["Vestidos"].includes(categoryName)) {
+        const hasNumberSizes = sizes.some((s) =>
+          ["4", "6", "8", "10", "12", "14", "16"].includes(s),
+        );
+        if (hasNumberSizes) return "niña";
+        return "mujer";
+      }
+      // Categorías exclusivas de hombre (solo hombre)
+      if (["Polos", "Ropa de Baño"].includes(categoryName)) {
+        const hasNumberSizes = sizes.some((s) =>
+          ["4", "6", "8", "10", "12", "14", "16"].includes(s),
+        );
+        if (hasNumberSizes) return "niño";
+        return "hombre";
+      }
+    }
+
+    // Si no se puede determinar por categorías exclusivas, usar tallas y categoría
     const hasNumberSizes = sizes.some((s) =>
       ["4", "6", "8", "10", "12", "14", "16"].includes(s),
     );
@@ -216,30 +259,161 @@ export default function ProductsPage() {
     );
 
     if (hasNumberSizes) {
-      // Podría ser niño o niña, pero no podemos determinarlo solo con las tallas
-      // Por defecto, dejamos que el usuario lo seleccione
+      // Tallas numéricas: niño o niña
+      if (categoryName) {
+        // Verificar si la categoría está en las categorías de niña
+        if (categoriesByGender.niña.includes(categoryName)) {
+          return "niña";
+        }
+        // Verificar si la categoría está en las categorías de niño
+        if (categoriesByGender.niño.includes(categoryName)) {
+          return "niño";
+        }
+      }
+      // Si no se puede determinar, dejar vacío para que el usuario seleccione
       return "";
     }
+
     if (hasLetterSizes) {
-      // Podría ser mujer u hombre, pero no podemos determinarlo solo con las tallas
+      // Tallas de letras: mujer u hombre
+      if (categoryName) {
+        // Verificar si la categoría está solo en mujer (exclusiva)
+        if (
+          categoriesByGender.mujer.includes(categoryName) &&
+          !categoriesByGender.hombre.includes(categoryName)
+        ) {
+          return "mujer";
+        }
+        // Verificar si la categoría está solo en hombre (exclusiva)
+        if (
+          categoriesByGender.hombre.includes(categoryName) &&
+          !categoriesByGender.mujer.includes(categoryName)
+        ) {
+          return "hombre";
+        }
+        // Si la categoría está en ambos, intentar determinar por el contexto
+        // Por defecto, si está en ambos y tiene tallas de letras, preferir mujer
+        // (ya que mujer tiene más categorías)
+        if (
+          categoriesByGender.mujer.includes(categoryName) &&
+          categoriesByGender.hombre.includes(categoryName)
+        ) {
+          // Para categorías compartidas, usar un heurístico simple
+          // Si la categoría es común, preferir mujer por defecto
+          return "mujer";
+        }
+      }
+      // Si no se puede determinar, dejar vacío para que el usuario seleccione
       return "";
     }
+
     return "";
+  };
+
+  const validateAndSetImage = (file: File) => {
+    // Validar tipo de archivo
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Tipo de archivo no permitido", {
+        description: "Solo se permiten imágenes (JPEG, PNG, WEBP, GIF)",
+      });
+      return false;
+    }
+
+    // Validar tamaño (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("Archivo demasiado grande", {
+        description: "El tamaño máximo es 10MB",
+      });
+      return false;
+    }
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    return true;
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      validateAndSetImage(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      validateAndSetImage(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    form.setValue("image", "");
+    // Resetear el input file
+    const fileInput = document.getElementById(
+      "image-upload",
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
+    }
   };
 
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
-      const detectedGender = detectGenderFromSizes(product.sizes || []);
-      form.reset({
+      const detectedGender = detectGenderFromProduct(product);
+
+      // Resetear el formulario con todos los datos del producto
+      const formData = {
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
         stock: product.stock.toString(),
         sizes: product.sizes || [],
         categoryId: product.category?.id || "",
-        gender: detectedGender,
-      });
+        gender: detectedGender || "", // Si no se detecta, dejar vacío
+        image: product.image || "",
+      };
+
+      form.reset(formData);
+
+      // Establecer preview de imagen si existe
+      if (product.image) {
+        setImagePreview(product.image);
+      } else {
+        setImagePreview(null);
+      }
+      setSelectedImage(null);
+
+      // Asegurarse de que el género se establezca correctamente
+      if (detectedGender) {
+        form.setValue("gender", detectedGender);
+      }
     } else {
       setEditingProduct(null);
       form.reset({
@@ -250,7 +424,10 @@ export default function ProductsPage() {
         sizes: [],
         categoryId: "",
         gender: "",
+        image: "",
       });
+      setImagePreview(null);
+      setSelectedImage(null);
     }
     setIsDialogOpen(true);
   };
@@ -258,6 +435,8 @@ export default function ProductsPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingProduct(null);
+    setSelectedImage(null);
+    setImagePreview(null);
     form.reset({
       name: "",
       description: "",
@@ -266,11 +445,44 @@ export default function ProductsPage() {
       sizes: [],
       categoryId: "",
       gender: "",
+      image: "",
     });
   };
 
   const onSubmit = async (data: ProductInput) => {
     try {
+      let imageUrl = data.image || null;
+
+      // Si hay una nueva imagen seleccionada, subirla primero
+      if (selectedImage) {
+        setIsUploadingImage(true);
+        try {
+          const formData = new FormData();
+          formData.append("file", selectedImage);
+
+          const uploadResponse = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(errorData.error || "Error al subir la imagen");
+          }
+
+          const uploadData = await uploadResponse.json();
+          imageUrl = uploadData.url;
+        } catch (error: any) {
+          toast.error("Error al subir la imagen", {
+            description: error.message || "No se pudo subir la imagen",
+          });
+          setIsUploadingImage(false);
+          return;
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+
       const payload = {
         name: data.name,
         description: data.description || null,
@@ -281,6 +493,7 @@ export default function ProductsPage() {
           data.categoryId === "none" || !data.categoryId
             ? null
             : data.categoryId,
+        image: imageUrl,
       };
 
       if (editingProduct) {
@@ -521,6 +734,108 @@ export default function ProductsPage() {
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Imagen del Producto</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          {!imagePreview ? (
+                            <div
+                              onDragOver={handleDragOver}
+                              onDragLeave={handleDragLeave}
+                              onDrop={handleDrop}
+                              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                                isDragging
+                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                  : "border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 bg-gray-50 dark:bg-gray-900/50"
+                              }`}
+                            >
+                              <input
+                                id="image-upload"
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onChange={handleImageChange}
+                              />
+                              <div className="flex flex-col items-center justify-center space-y-3">
+                                <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                                  <Upload className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                    Haz clic para subir o arrastra una imagen
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Formatos: JPEG, PNG, WEBP, GIF • Máximo 10MB
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative group">
+                              <div className="relative w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900">
+                                <img
+                                  src={imagePreview}
+                                  alt="Vista previa"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center">
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full"
+                                    onClick={handleRemoveImage}
+                                  >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="mt-2 flex items-center justify-center">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-full"
+                                  onClick={() => {
+                                    document
+                                      .getElementById("image-upload")
+                                      ?.click();
+                                  }}
+                                >
+                                  <ImageIcon className="h-4 w-4 mr-2" />
+                                  Cambiar imagen
+                                </Button>
+                                <input
+                                  id="image-upload"
+                                  type="file"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                                  className="hidden"
+                                  onChange={handleImageChange}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                      {/* Campo oculto para mantener el valor de la imagen en el formulario */}
+                      <input
+                        type="hidden"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -573,10 +888,14 @@ export default function ProductsPage() {
                       <Select
                         value={field.value || ""}
                         onValueChange={(value) => {
+                          const previousGender = field.value;
                           field.onChange(value);
-                          // Limpiar las tallas y categoría cuando se cambia el género
-                          form.setValue("sizes", []);
-                          form.setValue("categoryId", "");
+                          // Solo limpiar las tallas y categoría si el usuario cambia el género manualmente
+                          // (no cuando se detecta automáticamente al editar)
+                          if (previousGender && previousGender !== value) {
+                            form.setValue("sizes", []);
+                            form.setValue("categoryId", "");
+                          }
                         }}
                       >
                         <FormControl>
@@ -603,6 +922,23 @@ export default function ProductsPage() {
                     const filteredCategories = selectedGender
                       ? getFilteredCategories()
                       : categories;
+
+                    // Si estamos editando y la categoría actual no está en las filtradas,
+                    // agregarla para que se muestre
+                    let categoriesToShow = [...filteredCategories];
+                    if (editingProduct && editingProduct.category) {
+                      const currentCategory = editingProduct.category;
+                      const isInFiltered = filteredCategories.some(
+                        (cat) => cat.id === currentCategory.id,
+                      );
+                      if (!isInFiltered && currentCategory) {
+                        categoriesToShow = [
+                          currentCategory,
+                          ...filteredCategories,
+                        ];
+                      }
+                    }
+
                     return (
                       <FormItem>
                         <FormLabel>Categoría</FormLabel>
@@ -626,7 +962,7 @@ export default function ProductsPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="none">Sin categoría</SelectItem>
-                            {filteredCategories.map((category) => (
+                            {categoriesToShow.map((category) => (
                               <SelectItem key={category.id} value={category.id}>
                                 {category.name}
                               </SelectItem>
@@ -646,19 +982,43 @@ export default function ProductsPage() {
                 />
               </div>
 
-              {selectedGender && (
+              {(selectedGender ||
+                (editingProduct &&
+                  editingProduct.sizes &&
+                  editingProduct.sizes.length > 0)) && (
                 <FormField
                   control={form.control}
                   name="sizes"
                   render={({ field }) => {
                     const filteredSizes = getFilteredSizes();
+                    // Si estamos editando y hay tallas pero no hay género seleccionado,
+                    // mostrar todas las tallas disponibles para que el usuario pueda verlas
+                    const sizesToShow = selectedGender
+                      ? filteredSizes
+                      : editingProduct &&
+                          editingProduct.sizes &&
+                          editingProduct.sizes.length > 0
+                        ? sizes.filter((s) =>
+                            editingProduct.sizes?.includes(s.name),
+                          )
+                        : [];
+
                     return (
                       <FormItem>
                         <FormLabel>Tallas Disponibles</FormLabel>
+                        {!selectedGender &&
+                          editingProduct &&
+                          editingProduct.sizes &&
+                          editingProduct.sizes.length > 0 && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                              Selecciona una sección para ver todas las tallas
+                              disponibles
+                            </p>
+                          )}
                         <FormControl>
                           <div className="space-y-2">
                             <div className="flex flex-wrap gap-2">
-                              {filteredSizes.map((size) => (
+                              {sizesToShow.map((size) => (
                                 <button
                                   key={size.id}
                                   type="button"
@@ -708,12 +1068,16 @@ export default function ProductsPage() {
                 <Button
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 rounded-full"
-                  disabled={form.formState.isSubmitting}
+                  disabled={form.formState.isSubmitting || isUploadingImage}
                 >
-                  {form.formState.isSubmitting ? (
+                  {form.formState.isSubmitting || isUploadingImage ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {editingProduct ? "Actualizando..." : "Creando..."}
+                      {isUploadingImage
+                        ? "Subiendo imagen..."
+                        : editingProduct
+                          ? "Actualizando..."
+                          : "Creando..."}
                     </>
                   ) : (
                     <>{editingProduct ? "Actualizar" : "Crear"} Producto</>

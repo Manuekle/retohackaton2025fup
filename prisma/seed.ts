@@ -6,17 +6,22 @@ const prisma = new PrismaClient();
 async function seed() {
   console.log("Start seeding...");
 
-  // 1. Limpiar datos existentes
-  await prisma.saleItem.deleteMany({});
-  await prisma.sale.deleteMany({});
-  await prisma.customer.deleteMany({});
-  await prisma.productSize.deleteMany({});
-  await prisma.product.deleteMany({});
-  await prisma.size.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.clientType.deleteMany({});
-  await prisma.user.deleteMany({});
-  console.log("Cleaned up database.");
+  // 1. Limpiar datos existentes (secuencial para evitar problemas con Prisma Accelerate)
+  try {
+    await prisma.saleItem.deleteMany({});
+    await prisma.sale.deleteMany({});
+    await prisma.customer.deleteMany({});
+    await prisma.productSize.deleteMany({});
+    await prisma.product.deleteMany({});
+    await prisma.size.deleteMany({});
+    await prisma.category.deleteMany({});
+    await prisma.clientType.deleteMany({});
+    await prisma.user.deleteMany({});
+    console.log("Cleaned up database.");
+  } catch (error) {
+    console.error("Error al limpiar la base de datos:", error);
+    // Continuar de todas formas
+  }
 
   // 2. Crear usuarios (admin y customer)
   const adminPassword = await bcrypt.hash("password123", 10);
@@ -215,30 +220,31 @@ async function seed() {
     {} as Record<string, string>,
   );
 
-  const allProducts = await Promise.all(
-    productsData.map(async (p) => {
-      const product = await prisma.product.create({
-        data: {
-          name: p.name,
-          categoryId: categoryMap[p.categoryName],
-          // Precios en COP: entre 20.000 y 500.000 COP
-          price: Math.floor(Math.random() * 480000) + 20000,
-          stock: Math.floor(Math.random() * 200) + 50,
-          description: `Producto ${p.name} de la categoría ${p.categoryName}`,
-        },
-      });
+  // Crear productos secuencialmente para evitar problemas con Prisma Accelerate
+  const allProducts: any[] = [];
 
-      // Crear relaciones con las tallas
-      await prisma.productSize.createMany({
-        data: p.sizes.map((sizeName) => ({
-          productId: product.id,
-          sizeId: sizeMap[sizeName],
-        })),
-      });
+  for (const p of productsData) {
+    const product = await prisma.product.create({
+      data: {
+        name: p.name,
+        categoryId: categoryMap[p.categoryName],
+        // Precios en COP: entre 20.000 y 500.000 COP
+        price: Math.floor(Math.random() * 480000) + 20000,
+        stock: Math.floor(Math.random() * 200) + 50,
+        description: `Producto ${p.name} de la categoría ${p.categoryName}`,
+      },
+    });
 
-      return product;
-    }),
-  );
+    // Crear relaciones con las tallas
+    await prisma.productSize.createMany({
+      data: p.sizes.map((sizeName) => ({
+        productId: product.id,
+        sizeId: sizeMap[sizeName],
+      })),
+    });
+
+    allProducts.push(product);
+  }
   console.log("Created products.");
 
   // 6. Crear 5 clientes de ejemplo
@@ -284,9 +290,8 @@ async function seed() {
   );
   console.log("Created 5 customers.");
 
-  // 7. Generar datos de ventas aleatorios
+  // 7. Generar datos de ventas aleatorios (secuencial para evitar problemas con Prisma Accelerate)
   const salesToCreate = 150;
-  const sales = [];
   const saleSizes = {
     Mujer: ["XXS", "XS", "S", "M", "L", "XL"],
     Hombre: ["XXS", "XS", "S", "M", "L", "XL"],
@@ -301,6 +306,9 @@ async function seed() {
   const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59); // 31 de diciembre de 2025
   const endDate = now < endOfYear ? now : endOfYear; // Usar la fecha actual si es menor que fin de año
 
+  console.log(`Creando ${salesToCreate} ventas (esto puede tardar un poco)...`);
+
+  // Crear ventas secuencialmente para evitar problemas con el pool de conexiones
   for (let i = 0; i < salesToCreate; i++) {
     const product = allProducts[Math.floor(Math.random() * allProducts.length)];
     const clientType =
@@ -318,28 +326,30 @@ async function seed() {
     const size = clientSizes[Math.floor(Math.random() * clientSizes.length)];
     const customer = customers[Math.floor(Math.random() * customers.length)];
 
-    sales.push(
-      prisma.sale.create({
-        data: {
-          customerId: customer.id,
-          clientTypeId: clientType.id,
-          total: totalPrice,
-          date,
-          status: "completed",
-          items: {
-            create: {
-              productId: product.id,
-              quantity,
-              price: unitPrice,
-              size,
-            },
+    await prisma.sale.create({
+      data: {
+        customerId: customer.id,
+        clientTypeId: clientType.id,
+        total: totalPrice,
+        date,
+        status: "completed",
+        items: {
+          create: {
+            productId: product.id,
+            quantity,
+            price: unitPrice,
+            size,
           },
         },
-      }),
-    );
+      },
+    });
+
+    // Mostrar progreso cada 25 ventas
+    if ((i + 1) % 25 === 0) {
+      console.log(`  ${i + 1}/${salesToCreate} ventas creadas...`);
+    }
   }
 
-  await Promise.all(sales);
   console.log(`Created ${salesToCreate} sales.`);
 
   console.log("Seeding finished.");
