@@ -10,7 +10,9 @@ async function seed() {
   await prisma.saleItem.deleteMany({});
   await prisma.sale.deleteMany({});
   await prisma.customer.deleteMany({});
+  await prisma.productSize.deleteMany({});
   await prisma.product.deleteMany({});
+  await prisma.size.deleteMany({});
   await prisma.category.deleteMany({});
   await prisma.clientType.deleteMany({});
   await prisma.user.deleteMany({});
@@ -74,8 +76,33 @@ async function seed() {
   });
   console.log("Created base data.");
 
-  // 4. Crear productos con tallas
-  const sizes = {
+  // 4. Crear tallas (sizes)
+  const allSizeNames = [
+    "XXS",
+    "XS",
+    "S",
+    "M",
+    "L",
+    "XL",
+    "4",
+    "6",
+    "8",
+    "10",
+    "12",
+    "14",
+    "16",
+  ];
+  const sizes = await prisma.size.createManyAndReturn({
+    data: allSizeNames.map((name) => ({ name })),
+  });
+  const sizeMap = sizes.reduce(
+    (acc, size) => ({ ...acc, [size.name]: size.id }),
+    {} as Record<string, string>,
+  );
+  console.log("Created sizes.");
+
+  // 5. Crear productos con tallas según especificaciones
+  const sizeGroups = {
     Mujer: ["XXS", "XS", "S", "M", "L", "XL"],
     Hombre: ["XXS", "XS", "S", "M", "L", "XL"],
     Niño: ["4", "6", "8", "10", "12", "14", "16"],
@@ -84,20 +111,103 @@ async function seed() {
 
   const productsData = [
     // Mujer
-    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizes.Mujer },
-    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizes.Mujer },
-    { name: "BUZOS", categoryName: "Buzos", sizes: sizes.Mujer },
-    { name: "CAMISAS", categoryName: "Camisas", sizes: sizes.Mujer },
-    { name: "FALDA", categoryName: "Faldas", sizes: sizes.Mujer },
-    { name: "JEANS TERMINADOS", categoryName: "Jeans", sizes: sizes.Mujer },
+    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizeGroups.Mujer },
+    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Mujer },
+    { name: "BUZOS", categoryName: "Buzos", sizes: sizeGroups.Mujer },
+    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Mujer },
+    { name: "FALDA", categoryName: "Faldas", sizes: sizeGroups.Mujer },
+    { name: "HOGAR", categoryName: "Hogar", sizes: sizeGroups.Mujer },
+    {
+      name: "JEANS TERMINADOS",
+      categoryName: "Jeans",
+      sizes: sizeGroups.Mujer,
+    },
+    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizeGroups.Mujer },
+    { name: "PIJAMAS", categoryName: "Pijamas", sizes: sizeGroups.Mujer },
+    {
+      name: "ROPA INTERIOR",
+      categoryName: "Ropa Interior",
+      sizes: sizeGroups.Mujer,
+    },
+    {
+      name: "TERCERAS PIEZAS",
+      categoryName: "Terceras Piezas",
+      sizes: sizeGroups.Mujer,
+    },
+    {
+      name: "TSHIRT TERMINADAS",
+      categoryName: "T-Shirts",
+      sizes: sizeGroups.Mujer,
+    },
+    { name: "VESTIDOS", categoryName: "Vestidos", sizes: sizeGroups.Mujer },
     // Hombre
-    { name: "BUZO", categoryName: "Buzos", sizes: sizes.Hombre },
-    { name: "POLOS", categoryName: "Polos", sizes: sizes.Hombre },
-    // Niño & Niña
-    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizes.Niño },
-    { name: "ROPA DE BAÑO", categoryName: "Ropa de Baño", sizes: sizes.Niño },
-    { name: "TSHIRT TERMINADA", categoryName: "T-Shirts", sizes: sizes.Niña },
-    { name: "VESTIDOS", categoryName: "Vestidos", sizes: sizes.Niña },
+    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizeGroups.Hombre },
+    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Hombre },
+    { name: "BUZO", categoryName: "Buzos", sizes: sizeGroups.Hombre },
+    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Hombre },
+    { name: "HOGAR", categoryName: "Hogar", sizes: sizeGroups.Hombre },
+    {
+      name: "JEANS TERMINADOS",
+      categoryName: "Jeans",
+      sizes: sizeGroups.Hombre,
+    },
+    {
+      name: "PANTALONES",
+      categoryName: "Pantalones",
+      sizes: sizeGroups.Hombre,
+    },
+    { name: "POLOS", categoryName: "Polos", sizes: sizeGroups.Hombre },
+    {
+      name: "ROPA DE BAÑO",
+      categoryName: "Ropa de Baño",
+      sizes: sizeGroups.Hombre,
+    },
+    {
+      name: "ROPA INTERIOR",
+      categoryName: "Ropa Interior",
+      sizes: sizeGroups.Hombre,
+    },
+    {
+      name: "TSHIRT TERMINADA",
+      categoryName: "T-Shirts",
+      sizes: sizeGroups.Hombre,
+    },
+    // Niño
+    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Niño },
+    { name: "BUZO", categoryName: "Buzos", sizes: sizeGroups.Niño },
+    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Niño },
+    { name: "JEANS TERMINADOS", categoryName: "Jeans", sizes: sizeGroups.Niño },
+    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizeGroups.Niño },
+    { name: "POLOS", categoryName: "Polos", sizes: sizeGroups.Niño },
+    {
+      name: "ROPA DE BAÑO",
+      categoryName: "Ropa de Baño",
+      sizes: sizeGroups.Niño,
+    },
+    {
+      name: "TSHIRT TERMINADA",
+      categoryName: "T-Shirts",
+      sizes: sizeGroups.Niño,
+    },
+    // Niña
+    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizeGroups.Niña },
+    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Niña },
+    { name: "BUZO", categoryName: "Buzos", sizes: sizeGroups.Niña },
+    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Niña },
+    { name: "FALDA", categoryName: "Faldas", sizes: sizeGroups.Niña },
+    { name: "JEANS TERMINADOS", categoryName: "Jeans", sizes: sizeGroups.Niña },
+    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizeGroups.Niña },
+    {
+      name: "TERCERAS PIEZAS",
+      categoryName: "Terceras Piezas",
+      sizes: sizeGroups.Niña,
+    },
+    {
+      name: "TSHIRT TERMINADA",
+      categoryName: "T-Shirts",
+      sizes: sizeGroups.Niña,
+    },
+    { name: "VESTIDOS", categoryName: "Vestidos", sizes: sizeGroups.Niña },
   ];
 
   const categoryMap = categories.reduce(
@@ -105,9 +215,9 @@ async function seed() {
     {} as Record<string, string>,
   );
 
-  await Promise.all(
-    productsData.map((p) =>
-      prisma.product.create({
+  const allProducts = await Promise.all(
+    productsData.map(async (p) => {
+      const product = await prisma.product.create({
         data: {
           name: p.name,
           categoryId: categoryMap[p.categoryName],
@@ -115,15 +225,23 @@ async function seed() {
           price: Math.floor(Math.random() * 480000) + 20000,
           stock: Math.floor(Math.random() * 200) + 50,
           description: `Producto ${p.name} de la categoría ${p.categoryName}`,
-          sizes: p.sizes,
         },
-      }),
-    ),
+      });
+
+      // Crear relaciones con las tallas
+      await prisma.productSize.createMany({
+        data: p.sizes.map((sizeName) => ({
+          productId: product.id,
+          sizeId: sizeMap[sizeName],
+        })),
+      });
+
+      return product;
+    }),
   );
-  const allProducts = await prisma.product.findMany();
   console.log("Created products.");
 
-  // 5. Crear 5 clientes de ejemplo
+  // 6. Crear 5 clientes de ejemplo
   const customersData = [
     {
       name: "María García",
@@ -166,7 +284,7 @@ async function seed() {
   );
   console.log("Created 5 customers.");
 
-  // 6. Generar datos de ventas aleatorios
+  // 7. Generar datos de ventas aleatorios
   const salesToCreate = 150;
   const sales = [];
   const saleSizes = {

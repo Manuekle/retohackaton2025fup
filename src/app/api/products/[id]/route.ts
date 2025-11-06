@@ -13,6 +13,11 @@ export async function GET(
       where: { id },
       include: {
         category: true,
+        sizes: {
+          include: {
+            size: true,
+          },
+        },
       },
     });
 
@@ -23,7 +28,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(product);
+    // Transformar para incluir sizes como array de strings
+    const productWithSizes = {
+      ...product,
+      sizes: product.sizes.map((ps) => ps.size.name),
+    };
+
+    return NextResponse.json(productWithSizes);
   } catch (error) {
     console.error("Error al obtener el producto:", error);
     return NextResponse.json(
@@ -41,6 +52,16 @@ export async function PUT(
     const { id } = params;
     const data = await request.json();
 
+    // Obtener todas las tallas disponibles
+    const allSizes = await prisma.size.findMany();
+    const sizeMap = new Map(allSizes.map((s) => [s.name, s.id]));
+
+    // Eliminar todas las relaciones de tallas existentes
+    await prisma.productSize.deleteMany({
+      where: { productId: id },
+    });
+
+    // Actualizar el producto
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -48,15 +69,34 @@ export async function PUT(
         description: data.description || null,
         price: parseFloat(data.price),
         stock: parseInt(data.stock),
-        sizes: data.sizes || [],
         categoryId: data.categoryId || null,
+        sizes: {
+          create: (data.sizes || []).map((sizeName: string) => {
+            const sizeId = sizeMap.get(sizeName);
+            if (!sizeId) {
+              throw new Error(`Talla ${sizeName} no encontrada`);
+            }
+            return { sizeId };
+          }),
+        },
       },
       include: {
         category: true,
+        sizes: {
+          include: {
+            size: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json(product);
+    // Transformar para incluir sizes como array de strings
+    const productWithSizes = {
+      ...product,
+      sizes: product.sizes.map((ps) => ps.size.name),
+    };
+
+    return NextResponse.json(productWithSizes);
   } catch (error) {
     console.error("Error al actualizar el producto:", error);
     return NextResponse.json(

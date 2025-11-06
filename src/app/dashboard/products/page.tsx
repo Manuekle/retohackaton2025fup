@@ -62,9 +62,15 @@ type Category = {
   name: string;
 };
 
+type Size = {
+  id: string;
+  name: string;
+};
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [sizes, setSizes] = useState<Size[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -80,28 +86,111 @@ export default function ProductsPage() {
       stock: "",
       sizes: [],
       categoryId: "",
+      gender: "",
     },
   });
+
+  const selectedGender = form.watch("gender");
+
+  // Mapeo de categorías por género
+  const categoriesByGender: Record<string, string[]> = {
+    mujer: [
+      "Abrigos",
+      "Bermudas",
+      "Buzos",
+      "Camisas",
+      "Faldas",
+      "Hogar",
+      "Jeans",
+      "Pantalones",
+      "Pijamas",
+      "Ropa Interior",
+      "Terceras Piezas",
+      "T-Shirts",
+      "Vestidos",
+    ],
+    hombre: [
+      "Abrigos",
+      "Bermudas",
+      "Buzos",
+      "Camisas",
+      "Hogar",
+      "Jeans",
+      "Pantalones",
+      "Polos",
+      "Ropa de Baño",
+      "Ropa Interior",
+      "T-Shirts",
+    ],
+    niño: [
+      "Bermudas",
+      "Buzos",
+      "Camisas",
+      "Jeans",
+      "Pantalones",
+      "Polos",
+      "Ropa de Baño",
+      "T-Shirts",
+    ],
+    niña: [
+      "Abrigos",
+      "Bermudas",
+      "Buzos",
+      "Camisas",
+      "Faldas",
+      "Jeans",
+      "Pantalones",
+      "Terceras Piezas",
+      "T-Shirts",
+      "Vestidos",
+    ],
+  };
+
+  // Obtener categorías filtradas por género
+  const getFilteredCategories = () => {
+    if (!selectedGender || !categories.length) return categories;
+    const allowedCategories = categoriesByGender[selectedGender] || [];
+    return categories.filter((cat) => allowedCategories.includes(cat.name));
+  };
+
+  // Obtener tallas filtradas por género
+  const getFilteredSizes = () => {
+    if (!selectedGender || !sizes.length) return [];
+
+    const numberSizes = ["4", "6", "8", "10", "12", "14", "16"];
+    const letterSizes = ["XXS", "XS", "S", "M", "L", "XL"];
+
+    if (selectedGender === "niño" || selectedGender === "niña") {
+      return sizes.filter((s) => numberSizes.includes(s.name));
+    } else if (selectedGender === "mujer" || selectedGender === "hombre") {
+      return sizes.filter((s) => letterSizes.includes(s.name));
+    }
+
+    return [];
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, categoriesRes] = await Promise.all([
+        const [productsRes, categoriesRes, sizesRes] = await Promise.all([
           fetch("/api/products"),
           fetch("/api/categories"),
+          fetch("/api/sizes"),
         ]);
 
         if (!productsRes.ok) {
           throw new Error("Error al cargar productos");
         }
 
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, sizesData] = await Promise.all([
           productsRes.json(),
           categoriesRes.ok ? categoriesRes.json() : [],
+          sizesRes.ok ? sizesRes.json() : [],
         ]);
 
         setProducts(productsData);
         setCategories(categoriesData);
+        setSizes(sizesData);
       } catch {
         toast.error("Error al cargar los productos", {
           description:
@@ -115,9 +204,33 @@ export default function ProductsPage() {
     fetchData();
   }, []);
 
+  // Función para detectar el género basado en las tallas del producto
+  const detectGenderFromSizes = (sizes: string[]): string => {
+    if (!sizes || sizes.length === 0) return "";
+
+    const hasNumberSizes = sizes.some((s) =>
+      ["4", "6", "8", "10", "12", "14", "16"].includes(s),
+    );
+    const hasLetterSizes = sizes.some((s) =>
+      ["XXS", "XS", "S", "M", "L", "XL"].includes(s),
+    );
+
+    if (hasNumberSizes) {
+      // Podría ser niño o niña, pero no podemos determinarlo solo con las tallas
+      // Por defecto, dejamos que el usuario lo seleccione
+      return "";
+    }
+    if (hasLetterSizes) {
+      // Podría ser mujer u hombre, pero no podemos determinarlo solo con las tallas
+      return "";
+    }
+    return "";
+  };
+
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
+      const detectedGender = detectGenderFromSizes(product.sizes || []);
       form.reset({
         name: product.name,
         description: product.description || "",
@@ -125,6 +238,7 @@ export default function ProductsPage() {
         stock: product.stock.toString(),
         sizes: product.sizes || [],
         categoryId: product.category?.id || "",
+        gender: detectedGender,
       });
     } else {
       setEditingProduct(null);
@@ -135,6 +249,7 @@ export default function ProductsPage() {
         stock: "",
         sizes: [],
         categoryId: "",
+        gender: "",
       });
     }
     setIsDialogOpen(true);
@@ -150,6 +265,7 @@ export default function ProductsPage() {
       stock: "",
       sizes: [],
       categoryId: "",
+      gender: "",
     });
   };
 
@@ -450,91 +566,136 @@ export default function ProductsPage() {
 
                 <FormField
                   control={form.control}
-                  name="categoryId"
+                  name="gender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoría</FormLabel>
+                      <FormLabel>Sección *</FormLabel>
                       <Select
-                        value={field.value || "none"}
-                        onValueChange={(value) =>
-                          field.onChange(value === "none" ? "" : value)
-                        }
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Limpiar las tallas y categoría cuando se cambia el género
+                          form.setValue("sizes", []);
+                          form.setValue("categoryId", "");
+                        }}
                       >
                         <FormControl>
                           <SelectTrigger className="h-10 rounded-full">
-                            <SelectValue placeholder="Seleccionar categoría" />
+                            <SelectValue placeholder="Seleccionar sección" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">Sin categoría</SelectItem>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="niño">Niño</SelectItem>
+                          <SelectItem value="niña">Niña</SelectItem>
+                          <SelectItem value="mujer">Mujer</SelectItem>
+                          <SelectItem value="hombre">Hombre</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="sizes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tallas Disponibles</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            "XXS",
-                            "XS",
-                            "S",
-                            "M",
-                            "L",
-                            "XL",
-                            "4",
-                            "6",
-                            "8",
-                            "10",
-                            "12",
-                            "14",
-                            "16",
-                          ].map((size) => (
-                            <button
-                              key={size}
-                              type="button"
-                              onClick={() => {
-                                const currentSizes = field.value || [];
-                                const newSizes = currentSizes.includes(size)
-                                  ? currentSizes.filter((s) => s !== size)
-                                  : [...currentSizes, size];
-                                field.onChange(newSizes);
-                              }}
-                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                (field.value || []).includes(size)
-                                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                              }`}
-                            >
-                              {size}
-                            </button>
-                          ))}
-                        </div>
-                        {field.value && field.value.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => {
+                    const filteredCategories = selectedGender
+                      ? getFilteredCategories()
+                      : categories;
+                    return (
+                      <FormItem>
+                        <FormLabel>Categoría</FormLabel>
+                        <Select
+                          value={field.value || "none"}
+                          onValueChange={(value) =>
+                            field.onChange(value === "none" ? "" : value)
+                          }
+                          disabled={!selectedGender}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-10 rounded-full">
+                              <SelectValue
+                                placeholder={
+                                  selectedGender
+                                    ? "Seleccionar categoría"
+                                    : "Primero selecciona una sección"
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Sin categoría</SelectItem>
+                            {filteredCategories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {!selectedGender && (
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Tallas seleccionadas: {field.value.join(", ")}
+                            Selecciona una sección primero para ver las
+                            categorías disponibles
                           </p>
                         )}
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </div>
+
+              {selectedGender && (
+                <FormField
+                  control={form.control}
+                  name="sizes"
+                  render={({ field }) => {
+                    const filteredSizes = getFilteredSizes();
+                    return (
+                      <FormItem>
+                        <FormLabel>Tallas Disponibles</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-2">
+                              {filteredSizes.map((size) => (
+                                <button
+                                  key={size.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const currentSizes = field.value || [];
+                                    const newSizes = currentSizes.includes(
+                                      size.name,
+                                    )
+                                      ? currentSizes.filter(
+                                          (s) => s !== size.name,
+                                        )
+                                      : [...currentSizes, size.name];
+                                    field.onChange(newSizes);
+                                  }}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                    (field.value || []).includes(size.name)
+                                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                                      : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                  }`}
+                                >
+                                  {size.name}
+                                </button>
+                              ))}
+                            </div>
+                            {field.value && field.value.length > 0 && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Tallas seleccionadas: {field.value.join(", ")}
+                              </p>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              )}
               <DialogFooter>
                 <Button
                   type="button"

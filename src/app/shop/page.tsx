@@ -14,8 +14,8 @@ import {
   Minus,
   Settings,
   LogOut,
-  User,
   Package,
+  Trash2,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import {
@@ -26,9 +26,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { PageLoading } from "@/components/dashboard/LoadingSkeleton";
+import { Separator } from "@/components/ui/separator";
 
 type Product = {
   id: string;
@@ -48,15 +56,39 @@ type Category = {
   name: string;
 };
 
+type GenderSection = "all" | "niño" | "niña" | "mujer" | "hombre";
+
+// Tallas típicas para cada sección
+const GENDER_SIZES = {
+  niño: ["4", "6", "8", "10", "12", "14", "16"],
+  niña: ["4", "6", "8", "10", "12", "14", "16"],
+  mujer: ["XXS", "XS", "S", "M", "L", "XL"],
+  hombre: ["XXS", "XS", "S", "M", "L", "XL"],
+};
+
 export default function ShopPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { cart, addToCart, getItemCount, isLoading: cartLoading } = useCart();
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    getItemCount,
+    getTotal,
+    isLoading: cartLoading,
+  } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedGender, setSelectedGender] = useState<GenderSection>("all");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,6 +131,19 @@ export default function ShopPage() {
     }).format(value);
   };
 
+  // Función para determinar si un producto pertenece a una sección de género
+  const productBelongsToGender = (
+    product: Product,
+    gender: GenderSection,
+  ): boolean => {
+    if (gender === "all") return true;
+    if (!product.sizes || product.sizes.length === 0) return false;
+
+    const genderSizes = GENDER_SIZES[gender];
+    // Verificar si el producto tiene al menos una talla de la sección
+    return product.sizes.some((size) => genderSizes.includes(size));
+  };
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,9 +152,11 @@ export default function ShopPage() {
     const matchesCategory =
       selectedCategory === "all" || product.category?.id === selectedCategory;
 
+    const matchesGender = productBelongsToGender(product, selectedGender);
+
     const hasStock = product.stock > 0;
 
-    return matchesSearch && matchesCategory && hasStock;
+    return matchesSearch && matchesCategory && matchesGender && hasStock;
   });
 
   const handleAddToCart = (product: Product, size?: string) => {
@@ -134,6 +181,22 @@ export default function ShopPage() {
     toast.success("Producto agregado al carrito", {
       description: `${product.name}${size ? ` (Talla: ${size})` : ""} agregado correctamente.`,
     });
+
+    // Cerrar el dialog si está abierto
+    setIsProductDialogOpen(false);
+    setSelectedProduct(null);
+    setSelectedSize(undefined);
+  };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setSelectedSize(undefined);
+    setIsProductDialogOpen(true);
+  };
+
+  const handleCartItemRemove = (productId: string, size?: string) => {
+    removeFromCart(productId, size);
+    toast.success("Producto eliminado del carrito");
   };
 
   if (isLoading || cartLoading) {
@@ -153,19 +216,138 @@ export default function ShopPage() {
               Tienda
             </button>
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                onClick={() => router.push("/shop/cart")}
-              >
-                <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                {getItemCount() > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-blue-600 text-white text-xs font-bold rounded-full">
-                    {getItemCount()}
-                  </span>
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                    {getItemCount() > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-blue-600 text-white text-xs font-bold rounded-full">
+                        {getItemCount()}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-80 rounded-xl border-gray-200 dark:border-gray-800 shadow-lg p-0"
+                >
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Carrito de Compras
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {getItemCount()}{" "}
+                      {getItemCount() === 1 ? "producto" : "productos"}
+                    </p>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {cart.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <ShoppingCart className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-700 mb-3" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Tu carrito está vacío
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-2">
+                        {cart.map((item, index) => (
+                          <div
+                            key={`${item.productId}-${item.size || index}`}
+                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                {item.name}
+                              </p>
+                              {item.size && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  Talla: {item.size}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 rounded-full"
+                                    onClick={() => {
+                                      const newQuantity = item.quantity - 1;
+                                      updateQuantity(
+                                        item.productId,
+                                        newQuantity,
+                                        item.size,
+                                      );
+                                    }}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="text-xs font-medium w-6 text-center">
+                                    {item.quantity}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 rounded-full"
+                                    onClick={() => {
+                                      updateQuantity(
+                                        item.productId,
+                                        item.quantity + 1,
+                                        item.size,
+                                      );
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                  {formatCurrency(item.price * item.quantity)}
+                                </span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              onClick={() =>
+                                handleCartItemRemove(item.productId, item.size)
+                              }
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {cart.length > 0 && (
+                    <>
+                      <Separator className="bg-gray-200 dark:bg-gray-800" />
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            Total:
+                          </span>
+                          <span className="text-lg font-bold text-gray-900 dark:text-white">
+                            {formatCurrency(getTotal())}
+                          </span>
+                        </div>
+                        <Button
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full"
+                          onClick={() => {
+                            router.push("/shop/cart");
+                          }}
+                        >
+                          Ver Carrito Completo
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               {session ? (
                 <div className="flex items-center gap-2">
                   {session.user?.role === "admin" && (
@@ -269,36 +451,112 @@ export default function ShopPage() {
               className="pl-11 h-11 rounded-full border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-blue-500 dark:focus:border-blue-500"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory("all")}
-              className={`rounded-full text-xs h-8 px-4 ${
-                selectedCategory === "all"
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "border-gray-200 dark:border-gray-700"
-              }`}
-            >
-              Todas
-            </Button>
-            {categories.map((category) => (
+
+          {/* Gender Sections */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+              Secciones:
+            </h3>
+            <div className="flex flex-wrap gap-2">
               <Button
-                key={category.id}
-                variant={
-                  selectedCategory === category.id ? "default" : "outline"
-                }
+                variant={selectedGender === "all" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => setSelectedGender("all")}
                 className={`rounded-full text-xs h-8 px-4 ${
-                  selectedCategory === category.id
+                  selectedGender === "all"
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "border-gray-200 dark:border-gray-700"
                 }`}
               >
-                {category.name}
+                Todas
               </Button>
-            ))}
+              <Button
+                variant={selectedGender === "niño" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedGender("niño")}
+                className={`rounded-full text-xs h-8 px-4 ${
+                  selectedGender === "niño"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                Niño
+              </Button>
+              <Button
+                variant={selectedGender === "niña" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedGender("niña")}
+                className={`rounded-full text-xs h-8 px-4 ${
+                  selectedGender === "niña"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                Niña
+              </Button>
+              <Button
+                variant={selectedGender === "mujer" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedGender("mujer")}
+                className={`rounded-full text-xs h-8 px-4 ${
+                  selectedGender === "mujer"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                Mujer
+              </Button>
+              <Button
+                variant={selectedGender === "hombre" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedGender("hombre")}
+                className={`rounded-full text-xs h-8 px-4 ${
+                  selectedGender === "hombre"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                Hombre
+              </Button>
+            </div>
+          </div>
+
+          {/* Categories */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+              Categorías:
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedCategory === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory("all")}
+                className={`rounded-full text-xs h-8 px-4 ${
+                  selectedCategory === "all"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                Todas
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={
+                    selectedCategory === category.id ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`rounded-full text-xs h-8 px-4 ${
+                    selectedCategory === category.id
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "border-gray-200 dark:border-gray-700"
+                  }`}
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -314,7 +572,8 @@ export default function ShopPage() {
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200"
+                className="group border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 cursor-pointer"
+                onClick={() => handleProductClick(product)}
               >
                 <div className="p-5">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-xs">
@@ -336,43 +595,125 @@ export default function ShopPage() {
                       {product.stock} unidades
                     </Badge>
                   </div>
-                  {product.sizes && product.sizes.length > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">
-                        Tallas disponibles:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {product.sizes.map((size) => (
-                          <button
-                            key={size}
-                            onClick={() => handleAddToCart(product, size)}
-                            disabled={product.stock === 0}
-                            className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all duration-200 ${
-                              product.stock === 0
-                                ? "bg-gray-100 dark:bg-gray-900 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-800"
-                                : "bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-blue-600 hover:text-white hover:scale-105 border border-gray-200 dark:border-gray-800"
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full h-9 text-xs font-medium"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={product.stock === 0}
-                    >
-                      Agregar al Carrito
-                    </Button>
-                  )}
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full h-9 text-xs font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProductClick(product);
+                    }}
+                    disabled={product.stock === 0}
+                  >
+                    Ver Detalles
+                  </Button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </main>
+
+      {/* Product Detail Dialog */}
+      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedProduct && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-semibold tracking-heading">
+                  {selectedProduct.name}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedProduct.description || "Sin descripción"}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Price and Stock */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(selectedProduct.price)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Precio unitario
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      selectedProduct.stock > 10 ? "default" : "secondary"
+                    }
+                    className="text-xs h-6 px-3"
+                  >
+                    {selectedProduct.stock} unidades disponibles
+                  </Badge>
+                </div>
+
+                {/* Category */}
+                {selectedProduct.category && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Categoría:
+                    </p>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedProduct.category.name}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Sizes */}
+                {selectedProduct.sizes && selectedProduct.sizes.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      Selecciona una talla:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProduct.sizes.map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedSize(size)}
+                          disabled={selectedProduct.stock === 0}
+                          className={`px-4 py-2 text-sm rounded-full font-medium transition-all duration-200 border-2 ${
+                            selectedSize === size
+                              ? "bg-blue-600 text-white border-blue-600 scale-105"
+                              : selectedProduct.stock === 0
+                                ? "bg-gray-100 dark:bg-gray-900 text-gray-400 cursor-not-allowed border-gray-200 dark:border-gray-800"
+                                : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Add to Cart Button */}
+                <div className="pt-4">
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full h-12 text-sm font-semibold"
+                    onClick={() =>
+                      handleAddToCart(selectedProduct, selectedSize)
+                    }
+                    disabled={
+                      selectedProduct.stock === 0 ||
+                      (selectedProduct.sizes &&
+                        selectedProduct.sizes.length > 0 &&
+                        !selectedSize)
+                    }
+                  >
+                    {selectedProduct.stock === 0
+                      ? "Sin Stock"
+                      : selectedProduct.sizes &&
+                          selectedProduct.sizes.length > 0 &&
+                          !selectedSize
+                        ? "Selecciona una talla"
+                        : "Agregar al Carrito"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
