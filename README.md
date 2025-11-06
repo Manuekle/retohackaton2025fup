@@ -2,6 +2,24 @@
 
 Este proyecto es una solución de software tipo web desarrollada para el Reto Hackaton 2025 FUP. La aplicación permite a una empresa de retail analizar sus ventas, controlar su inventario de manera eficiente y tomar decisiones basadas en datos.
 
+## 👥 Equipo de Desarrollo
+
+Este proyecto fue desarrollado por un equipo de 3 integrantes:
+
+- **Manuel Esteban Erazo Medina** - Desarrollador Full Stack
+  - 📧 Email: manuel.erazo7@estudiante.fup.edu.co
+  - 🔗 GitHub: [@Manuekle](https://github.com/Manuekle)
+
+- **Santiago Alejandro Medina Munoz** - Desarrollador Data Analyst
+  - 📧 Email: santiagoa.medina@estudiante.fup.edu.co
+  - 🔗 GitHub: [@santiamedina](https://github.com/santiamedina)
+
+- **Juan Miguel Cedeno Solano** - Arquitecto de Software
+  - 📧 Email: juan.cedeno@estudiante.fup.edu.co
+  - 🔗 GitHub: [@Juans4Tv](https://github.com/Juans4Tv)
+
+**Repositorio del Proyecto:** [retohackaton2025fup](https://github.com/Manuekle/retohackaton2025fup)
+
 ## 🚀 Características Principales
 
 - **Dashboard Interactivo:** Visualización clara de KPIs (Key Performance Indicators) como ingresos totales, artículos vendidos y total de transacciones.
@@ -10,6 +28,12 @@ Este proyecto es una solución de software tipo web desarrollada para el Reto Ha
 - **Autenticación Segura:** Sistema de inicio de sesión con credenciales (email y contraseña) para proteger el acceso al dashboard.
 - **Roles de Usuario:** Sistema de roles (admin y customer) con acceso diferenciado a funcionalidades.
 - **Tienda Pública:** Sección pública para que los clientes puedan ver productos, agregar al carrito y realizar compras.
+- **Filtros por Género:** Sistema de filtrado por secciones (Niño, Niña, Mujer, Hombre) en la tienda.
+- **Gestión de Imágenes:** Sistema de subida de imágenes de productos usando Vercel Blob Storage con drag & drop.
+- **Sistema de Tallas:** Gestión avanzada de tallas con tabla dedicada y relación many-to-many con productos.
+- **Categorías por Género:** Sistema inteligente que filtra categorías y tallas según la sección seleccionada.
+- **Vista Previa de Productos:** Modal detallado con información completa del producto, tallas disponibles y opción de agregar al carrito.
+- **Carrito de Compras:** Vista previa del carrito con dropdown, control de cantidades y total.
 - **Historial de Compras:** Los clientes pueden ver su historial de compras y detalles de cada pedido.
 - **Modo Claro y Oscuro:** Interfaz con soporte para temas claro y oscuro para una mejor experiencia de usuario.
 - **Diseño Responsive:** Interfaz completamente responsive que se adapta a dispositivos móviles, tablets y desktop.
@@ -35,6 +59,7 @@ Este proyecto es una solución de software tipo web desarrollada para el Reto Ha
 - **Fuentes:** Geist Fonts
 - **Testing:** Jest 30.2.0, React Testing Library 16.3.0, Playwright 1.56.1
 - **Linting y Formato:** ESLint, Prettier
+- **Almacenamiento de Archivos:** Vercel Blob Storage (@vercel/blob 0.27.3)
 
 ## 🛠️ Instalación y Ejecución
 
@@ -49,8 +74,8 @@ Sigue estos pasos para configurar y ejecutar el proyecto en tu entorno local.
 ### 2. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/tu-repositorio.git
-cd tu-repositorio
+git clone https://github.com/Manuekle/retohackaton2025fup.git
+cd retohackaton2025fup
 ```
 
 ### 3. Instalar Dependencias
@@ -76,6 +101,9 @@ NEXTAUTH_URL="http://localhost:3000"
 
 # Clave secreta para firmar los JWT (puedes generar una con `openssl rand -base64 32`)
 NEXTAUTH_SECRET="TU_CLAVE_SECRETA"
+
+# Token de Vercel Blob Storage para subir imágenes
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_xxxxxxxxxxxxxxxxxxxxx"
 ```
 
 ### 5. Migración de la Base de Datos
@@ -752,6 +780,36 @@ npm run test:e2e     # Ejecuta tests E2E
 - Sitemap XML generado automáticamente (`/sitemap.xml`)
 - Robots.txt configurado (`/robots.txt`)
 - Open Graph y Twitter Cards implementados
+
+## 🆕 Características Recientes
+
+### Gestión de Imágenes con Vercel Blob
+
+- Sistema de subida de imágenes de productos usando Vercel Blob Storage
+- Interfaz drag & drop para subir imágenes
+- Vista previa de imágenes antes de guardar
+- Validación de tipo de archivo (JPEG, PNG, WEBP, GIF) y tamaño máximo (10MB)
+
+### Sistema de Secciones por Género
+
+- Filtrado de productos por secciones: Niño, Niña, Mujer, Hombre
+- Categorías dinámicas según la sección seleccionada
+- Tallas específicas por género (numéricas para niños/niñas, letras para adultos)
+- Detección automática de género al editar productos
+
+### Sistema de Tallas Mejorado
+
+- Tabla dedicada de tallas en la base de datos
+- Relación many-to-many entre productos y tallas
+- Gestión centralizada de tallas disponibles
+- Filtrado inteligente de tallas según el género del producto
+
+### Mejoras en la Tienda
+
+- Vista previa del carrito con dropdown
+- Modal detallado de productos con información completa
+- Filtros por categoría y género
+- Búsqueda de productos en tiempo real
 
 ## 🤝 Contribuir
 
