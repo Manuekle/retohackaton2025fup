@@ -3,6 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar que la variable de entorno esté configurada
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      console.error("BLOB_READ_WRITE_TOKEN no está configurada");
+      return NextResponse.json(
+        { error: "Configuración de almacenamiento no disponible" },
+        { status: 500 },
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
@@ -40,10 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Subir archivo a Vercel Blob
+    // Subir archivo a Vercel Blob usando el token de la variable de entorno
     const blob = await put(file.name, file, {
       access: "public",
       contentType: file.type,
+      token, // Usar explícitamente el token de la variable de entorno
     });
 
     return NextResponse.json({ url: blob.url });
