@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/database/prisma";
+import { withPrismaRetry } from "@/lib/database/prisma-retry";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
@@ -14,9 +15,11 @@ export async function POST(req: Request) {
     }
 
     console.log("Checking for existing user with email:", email);
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await withPrismaRetry(() =>
+      prisma.user.findUnique({
+        where: { email },
+      }),
+    );
 
     if (existingUser) {
       return NextResponse.json(
@@ -31,31 +34,43 @@ export async function POST(req: Request) {
     console.log("Creating user...");
 
     // Verificar si ya existe un customer con este email
-    const existingCustomer = await prisma.customer.findUnique({
-      where: { email },
-    });
+    const existingCustomer = await withPrismaRetry(() =>
+      prisma.customer.findUnique({
+        where: { email },
+      }),
+    );
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: "customer", // Nuevos usuarios son customer por defecto
-        customer: existingCustomer
-          ? {
-              connect: { id: existingCustomer.id },
-            }
-          : {
-              create: {
-                name,
-                email,
+    // Si el customer existe y ya tiene un userId, no podemos conectarlo
+    if (existingCustomer && existingCustomer.userId) {
+      return NextResponse.json(
+        { message: "Este email ya está asociado a una cuenta" },
+        { status: 409 },
+      );
+    }
+
+    const user = await withPrismaRetry(() =>
+      prisma.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          role: "customer", // Nuevos usuarios son customer por defecto
+          customer: existingCustomer
+            ? {
+                connect: { id: existingCustomer.id },
+              }
+            : {
+                create: {
+                  name,
+                  email,
+                },
               },
-            },
-      },
-      include: {
-        customer: true,
-      },
-    });
+        },
+        include: {
+          customer: true,
+        },
+      }),
+    );
 
     console.log("User created successfully:", user.id);
     return NextResponse.json(
@@ -64,6 +79,28 @@ export async function POST(req: Request) {
     );
   } catch (error) {
     console.error("Registration error details:", error);
+
+    // Manejar errores específicos de Prisma
+    if (error && typeof error === "object" && "code" in error) {
+      const prismaError = error as { code?: string; message?: string };
+
+      // Error de constraint único (email duplicado)
+      if (prismaError.code === "P2002") {
+        return NextResponse.json(
+          { message: "Este email ya está registrado" },
+          { status: 409 },
+        );
+      }
+
+      // Error de conexión con Prisma Accelerate
+      if (prismaError.code === "P5010") {
+        return NextResponse.json(
+          { message: "Error de conexión. Por favor, intenta de nuevo." },
+          { status: 503 },
+        );
+      }
+    }
+
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json(
