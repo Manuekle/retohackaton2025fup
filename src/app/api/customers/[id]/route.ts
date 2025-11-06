@@ -11,9 +11,6 @@ export async function GET(
 
     const customer = await prisma.customer.findUnique({
       where: { id },
-      include: {
-        clientType: true,
-      },
     });
 
     if (!customer) {
@@ -48,10 +45,6 @@ export async function PUT(
         email: data.email || null,
         phone: data.phone || null,
         address: data.address || null,
-        clientTypeId: data.clientTypeId || null,
-      },
-      include: {
-        clientType: true,
       },
     });
 

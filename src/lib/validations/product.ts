@@ -27,6 +27,7 @@ export const productSchema = z.object({
     ),
   sizes: z.array(z.string()).optional().default([]),
   categoryId: z.string().optional().nullable(),
+  clientTypeId: z.string().optional().nullable(),
   gender: z.string().optional(),
   image: z.string().optional().nullable(),
 });

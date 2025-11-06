@@ -114,105 +114,268 @@ async function seed() {
     Niña: ["4", "6", "8", "10", "12", "14", "16"],
   };
 
+  const clientTypeMap = clientTypes.reduce(
+    (acc, type) => ({ ...acc, [type.name]: type.id }),
+    {} as Record<string, string>,
+  );
+
   const productsData = [
     // Mujer
-    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizeGroups.Mujer },
-    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Mujer },
-    { name: "BUZOS", categoryName: "Buzos", sizes: sizeGroups.Mujer },
-    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Mujer },
-    { name: "FALDA", categoryName: "Faldas", sizes: sizeGroups.Mujer },
-    { name: "HOGAR", categoryName: "Hogar", sizes: sizeGroups.Mujer },
+    {
+      name: "ABRIGO",
+      categoryName: "Abrigos",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
+    {
+      name: "BERMUDA",
+      categoryName: "Bermudas",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
+    {
+      name: "BUZOS",
+      categoryName: "Buzos",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
+    {
+      name: "CAMISAS",
+      categoryName: "Camisas",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
+    {
+      name: "FALDA",
+      categoryName: "Faldas",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
+    {
+      name: "HOGAR",
+      categoryName: "Hogar",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
     {
       name: "JEANS TERMINADOS",
       categoryName: "Jeans",
       sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
     },
-    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizeGroups.Mujer },
-    { name: "PIJAMAS", categoryName: "Pijamas", sizes: sizeGroups.Mujer },
+    {
+      name: "PANTALONES",
+      categoryName: "Pantalones",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
+    {
+      name: "PIJAMAS",
+      categoryName: "Pijamas",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
     {
       name: "ROPA INTERIOR",
       categoryName: "Ropa Interior",
       sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
     },
     {
       name: "TERCERAS PIEZAS",
       categoryName: "Terceras Piezas",
       sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
     },
     {
       name: "TSHIRT TERMINADAS",
       categoryName: "T-Shirts",
       sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
     },
-    { name: "VESTIDOS", categoryName: "Vestidos", sizes: sizeGroups.Mujer },
+    {
+      name: "VESTIDOS",
+      categoryName: "Vestidos",
+      sizes: sizeGroups.Mujer,
+      clientTypeName: "Mujer",
+    },
     // Hombre
-    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizeGroups.Hombre },
-    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Hombre },
-    { name: "BUZO", categoryName: "Buzos", sizes: sizeGroups.Hombre },
-    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Hombre },
-    { name: "HOGAR", categoryName: "Hogar", sizes: sizeGroups.Hombre },
+    {
+      name: "ABRIGO",
+      categoryName: "Abrigos",
+      sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
+    },
+    {
+      name: "BERMUDA",
+      categoryName: "Bermudas",
+      sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
+    },
+    {
+      name: "BUZO",
+      categoryName: "Buzos",
+      sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
+    },
+    {
+      name: "CAMISAS",
+      categoryName: "Camisas",
+      sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
+    },
+    {
+      name: "HOGAR",
+      categoryName: "Hogar",
+      sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
+    },
     {
       name: "JEANS TERMINADOS",
       categoryName: "Jeans",
       sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
     },
     {
       name: "PANTALONES",
       categoryName: "Pantalones",
       sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
     },
-    { name: "POLOS", categoryName: "Polos", sizes: sizeGroups.Hombre },
+    {
+      name: "POLOS",
+      categoryName: "Polos",
+      sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
+    },
     {
       name: "ROPA DE BAÑO",
       categoryName: "Ropa de Baño",
       sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
     },
     {
       name: "ROPA INTERIOR",
       categoryName: "Ropa Interior",
       sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
     },
     {
       name: "TSHIRT TERMINADA",
       categoryName: "T-Shirts",
       sizes: sizeGroups.Hombre,
+      clientTypeName: "Hombre",
     },
     // Niño
-    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Niño },
-    { name: "BUZO", categoryName: "Buzos", sizes: sizeGroups.Niño },
-    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Niño },
-    { name: "JEANS TERMINADOS", categoryName: "Jeans", sizes: sizeGroups.Niño },
-    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizeGroups.Niño },
-    { name: "POLOS", categoryName: "Polos", sizes: sizeGroups.Niño },
+    {
+      name: "BERMUDA",
+      categoryName: "Bermudas",
+      sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
+    },
+    {
+      name: "BUZO",
+      categoryName: "Buzos",
+      sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
+    },
+    {
+      name: "CAMISAS",
+      categoryName: "Camisas",
+      sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
+    },
+    {
+      name: "JEANS TERMINADOS",
+      categoryName: "Jeans",
+      sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
+    },
+    {
+      name: "PANTALONES",
+      categoryName: "Pantalones",
+      sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
+    },
+    {
+      name: "POLOS",
+      categoryName: "Polos",
+      sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
+    },
     {
       name: "ROPA DE BAÑO",
       categoryName: "Ropa de Baño",
       sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
     },
     {
       name: "TSHIRT TERMINADA",
       categoryName: "T-Shirts",
       sizes: sizeGroups.Niño,
+      clientTypeName: "Niño",
     },
     // Niña
-    { name: "ABRIGO", categoryName: "Abrigos", sizes: sizeGroups.Niña },
-    { name: "BERMUDA", categoryName: "Bermudas", sizes: sizeGroups.Niña },
-    { name: "BUZO", categoryName: "Buzos", sizes: sizeGroups.Niña },
-    { name: "CAMISAS", categoryName: "Camisas", sizes: sizeGroups.Niña },
-    { name: "FALDA", categoryName: "Faldas", sizes: sizeGroups.Niña },
-    { name: "JEANS TERMINADOS", categoryName: "Jeans", sizes: sizeGroups.Niña },
-    { name: "PANTALONES", categoryName: "Pantalones", sizes: sizeGroups.Niña },
+    {
+      name: "ABRIGO",
+      categoryName: "Abrigos",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
+    {
+      name: "BERMUDA",
+      categoryName: "Bermudas",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
+    {
+      name: "BUZO",
+      categoryName: "Buzos",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
+    {
+      name: "CAMISAS",
+      categoryName: "Camisas",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
+    {
+      name: "FALDA",
+      categoryName: "Faldas",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
+    {
+      name: "JEANS TERMINADOS",
+      categoryName: "Jeans",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
+    {
+      name: "PANTALONES",
+      categoryName: "Pantalones",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
     {
       name: "TERCERAS PIEZAS",
       categoryName: "Terceras Piezas",
       sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
     },
     {
       name: "TSHIRT TERMINADA",
       categoryName: "T-Shirts",
       sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
     },
-    { name: "VESTIDOS", categoryName: "Vestidos", sizes: sizeGroups.Niña },
+    {
+      name: "VESTIDOS",
+      categoryName: "Vestidos",
+      sizes: sizeGroups.Niña,
+      clientTypeName: "Niña",
+    },
   ];
 
   const categoryMap = categories.reduce(
@@ -228,6 +391,7 @@ async function seed() {
       data: {
         name: p.name,
         categoryId: categoryMap[p.categoryName],
+        clientTypeId: clientTypeMap[p.clientTypeName],
         // Precios en COP: entre 20.000 y 500.000 COP
         price: Math.floor(Math.random() * 480000) + 20000,
         stock: Math.floor(Math.random() * 200) + 50,
@@ -253,32 +417,27 @@ async function seed() {
       name: "María García",
       email: "maria@gmail.com",
       phone: "+57 300 123 4567",
-      clientTypeId: clientTypes[0].id,
-    }, // Mujer
+    },
     {
       name: "Juan Pérez",
       email: "juan@gmail.com",
       phone: "+57 300 234 5678",
-      clientTypeId: clientTypes[1].id,
-    }, // Hombre
+    },
     {
       name: "Ana Martínez",
       email: "ana@gmail.com",
       phone: "+57 300 345 6789",
-      clientTypeId: clientTypes[0].id,
-    }, // Mujer
+    },
     {
       name: "Carlos Rodríguez",
       email: "carlos@gmail.com",
       phone: "+57 300 456 7890",
-      clientTypeId: clientTypes[1].id,
-    }, // Hombre
+    },
     {
       name: "Laura Sánchez",
       email: "laura@gmail.com",
       phone: "+57 300 567 8901",
-      clientTypeId: clientTypes[0].id,
-    }, // Mujer
+    },
   ];
 
   const customers = await Promise.all(
@@ -329,7 +488,6 @@ async function seed() {
     await prisma.sale.create({
       data: {
         customerId: customer.id,
-        clientTypeId: clientType.id,
         total: totalPrice,
         date,
         status: "completed",

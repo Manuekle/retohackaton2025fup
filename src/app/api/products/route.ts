@@ -7,6 +7,7 @@ export async function GET() {
     const products = await prisma.product.findMany({
       include: {
         category: true,
+        clientType: true,
         sizes: {
           include: {
             size: true,
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
         stock: parseInt(data.stock),
         image: data.image || null,
         categoryId: data.categoryId || null,
+        clientTypeId: data.clientTypeId || null,
         sizes: {
           create: (data.sizes || []).map((sizeName: string) => {
             const sizeId = sizeMap.get(sizeName);
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       },
       include: {
         category: true,
+        clientType: true,
         sizes: {
           include: {
             size: true,

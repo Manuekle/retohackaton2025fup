@@ -9,18 +9,20 @@ datasource db {
 }
 
 model Product {
-  id          String    @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   description String?
   price       Float
-  stock       Int       @default(0)
+  stock       Int         @default(0)
   image       String?
   categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
+  category    Category?   @relation(fields: [categoryId], references: [id])
+  clientTypeId String?
+  clientType  ClientType? @relation(fields: [clientTypeId], references: [id])
   sizes       ProductSize[]
   saleItems   SaleItem[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Category {
@@ -34,7 +36,7 @@ model Category {
 model ClientType {
   id          String    @id @default(cuid())
   name        String    @unique
-  customers   Customer[]
+  products    Product[]
   sales       Sale[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -46,8 +48,6 @@ model Customer {
   email       String?     @unique
   phone       String?
   address     String?
-  clientTypeId String?
-  clientType  ClientType? @relation(fields: [clientTypeId], references: [id])
   sales       Sale[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

@@ -13,6 +13,7 @@ export async function GET(
       where: { id },
       include: {
         category: true,
+        clientType: true,
         sizes: {
           include: {
             size: true,
@@ -71,6 +72,7 @@ export async function PUT(
         stock: parseInt(data.stock),
         image: data.image || null,
         categoryId: data.categoryId || null,
+        clientTypeId: data.clientTypeId || null,
         sizes: {
           create: (data.sizes || []).map((sizeName: string) => {
             const sizeId = sizeMap.get(sizeName);
@@ -83,6 +85,7 @@ export async function PUT(
       },
       include: {
         category: true,
+        clientType: true,
         sizes: {
           include: {
             size: true,

@@ -64,6 +64,10 @@ type Product = {
     id: string;
     name: string;
   } | null;
+  clientType?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 type Category = {
@@ -76,10 +80,16 @@ type Size = {
   name: string;
 };
 
+type ClientType = {
+  id: string;
+  name: string;
+};
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
+  const [clientTypes, setClientTypes] = useState<ClientType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -99,6 +109,7 @@ export default function ProductsPage() {
       stock: "",
       sizes: [],
       categoryId: "",
+      clientTypeId: "",
       gender: "",
       image: "",
     },
@@ -186,25 +197,30 @@ export default function ProductsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes, categoriesRes, sizesRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/categories"),
-          fetch("/api/sizes"),
-        ]);
+        const [productsRes, categoriesRes, sizesRes, clientTypesRes] =
+          await Promise.all([
+            fetch("/api/products"),
+            fetch("/api/categories"),
+            fetch("/api/sizes"),
+            fetch("/api/client-types"),
+          ]);
 
         if (!productsRes.ok) {
           throw new Error("Error al cargar productos");
         }
 
-        const [productsData, categoriesData, sizesData] = await Promise.all([
-          productsRes.json(),
-          categoriesRes.ok ? categoriesRes.json() : [],
-          sizesRes.ok ? sizesRes.json() : [],
-        ]);
+        const [productsData, categoriesData, sizesData, clientTypesData] =
+          await Promise.all([
+            productsRes.json(),
+            categoriesRes.ok ? categoriesRes.json() : [],
+            sizesRes.ok ? sizesRes.json() : [],
+            clientTypesRes.ok ? clientTypesRes.json() : [],
+          ]);
 
         setProducts(productsData);
         setCategories(categoriesData);
         setSizes(sizesData);
+        setClientTypes(clientTypesData);
       } catch {
         toast.error("Error al cargar los productos", {
           description:
@@ -396,6 +412,7 @@ export default function ProductsPage() {
         stock: product.stock.toString(),
         sizes: product.sizes || [],
         categoryId: product.category?.id || "",
+        clientTypeId: product.clientType?.id || "",
         gender: detectedGender || "", // Si no se detecta, dejar vacío
         image: product.image || "",
       };
@@ -423,6 +440,7 @@ export default function ProductsPage() {
         stock: "",
         sizes: [],
         categoryId: "",
+        clientTypeId: "",
         gender: "",
         image: "",
       });
@@ -1015,6 +1033,37 @@ export default function ProductsPage() {
                       </FormItem>
                     );
                   }}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="clientTypeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Cliente</FormLabel>
+                      <Select
+                        value={field.value || "__none__"}
+                        onValueChange={(value) =>
+                          field.onChange(value === "__none__" ? "" : value)
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-10 rounded-full">
+                            <SelectValue placeholder="Seleccionar tipo de cliente" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">Sin tipo</SelectItem>
+                          {clientTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
 

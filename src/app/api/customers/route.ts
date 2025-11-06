@@ -23,7 +23,6 @@ export async function POST(request: Request) {
         email: data.email || null,
         phone: data.phone || null,
         address: data.address || null,
-        clientTypeId: data.clientTypeId || null,
       },
     });
     return NextResponse.json(customer);

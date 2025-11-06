@@ -36,7 +36,6 @@ export async function POST(request: Request) {
       customerAddress,
       items,
       total,
-      clientTypeId,
       date,
     } = await request.json();
 
@@ -63,7 +62,6 @@ export async function POST(request: Request) {
               email: customerEmail,
               phone: customerPhone || null,
               address: customerAddress || null,
-              clientTypeId: clientTypeId || null,
             },
           });
         } else {
@@ -74,7 +72,6 @@ export async function POST(request: Request) {
               name: customerName,
               phone: customerPhone || customer.phone,
               address: customerAddress || customer.address,
-              clientTypeId: clientTypeId || customer.clientTypeId,
             },
           });
         }
@@ -86,7 +83,6 @@ export async function POST(request: Request) {
       const newSale = await prisma.sale.create({
         data: {
           customerId: customer.id,
-          clientTypeId: clientTypeId || null,
           total: parseFloat(total),
           status: "completed",
           date: date ? new Date(date) : new Date(),
