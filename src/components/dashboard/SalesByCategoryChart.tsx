@@ -3,7 +3,6 @@
 import {
   Bar,
   BarChart,
-  ResponsiveContainer,
   XAxis,
   YAxis,
   Tooltip,
@@ -11,6 +10,14 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useTheme } from "next-themes";
+import { ChartContainer, ChartConfig } from "@/components/ui/chart";
+
+const chartConfig: ChartConfig = {
+  total: {
+    label: "Unidades Vendidas",
+    color: "#3b82f6",
+  },
+} as const;
 
 export interface CategorySalesData {
   name: string;
@@ -82,56 +89,57 @@ export function SalesByCategoryChart({ data }: SalesByCategoryChartProps) {
   const topCategories = sortedData.slice(0, 10);
 
   return (
-    <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={topCategories}
-          layout="vertical"
-          margin={{
-            top: 5,
-            right: 30,
-            left: 40,
-            bottom: 5,
+    <ChartContainer
+      config={chartConfig}
+      className="aspect-auto h-[250px] w-full"
+    >
+      <BarChart
+        data={topCategories}
+        layout="vertical"
+        margin={{
+          top: 5,
+          right: 30,
+          left: 40,
+          bottom: 5,
+        }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke={isDark ? "#1f2937" : "#e5e7eb"}
+        />
+        <XAxis
+          type="number"
+          stroke={isDark ? "#9ca3af" : "#6b7280"}
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+          tickFormatter={(value: number) => value.toLocaleString()}
+        />
+        <YAxis
+          dataKey="name"
+          type="category"
+          stroke={isDark ? "#9ca3af" : "#6b7280"}
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+          width={100}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend
+          wrapperStyle={{
+            fontSize: "12px",
+            color: isDark ? "#9ca3af" : "#6b7280",
           }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={isDark ? "#1f2937" : "#e5e7eb"}
-          />
-          <XAxis
-            type="number"
-            stroke={isDark ? "#9ca3af" : "#6b7280"}
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-            tickFormatter={(value: number) => value.toLocaleString()}
-          />
-          <YAxis
-            dataKey="name"
-            type="category"
-            stroke={isDark ? "#9ca3af" : "#6b7280"}
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-            width={100}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{
-              fontSize: "12px",
-              color: isDark ? "#9ca3af" : "#6b7280",
-            }}
-          />
-          <Bar
-            dataKey="total"
-            name="Unidades Vendidas"
-            fill="#3b82f6"
-            radius={[0, 8, 8, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+        />
+        <Bar
+          dataKey="total"
+          name="Unidades Vendidas"
+          fill="#3b82f6"
+          radius={[0, 8, 8, 0]}
+        />
+      </BarChart>
+    </ChartContainer>
   );
 }

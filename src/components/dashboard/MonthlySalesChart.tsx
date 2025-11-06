@@ -3,7 +3,6 @@
 import {
   Line,
   LineChart,
-  ResponsiveContainer,
   XAxis,
   YAxis,
   Tooltip,
@@ -11,6 +10,14 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useTheme } from "next-themes";
+import { ChartContainer, ChartConfig } from "@/components/ui/chart";
+
+const chartConfig: ChartConfig = {
+  total: {
+    label: "Ventas",
+    color: "#3b82f6",
+  },
+} as const;
 
 export interface MonthlySalesData {
   name: string;
@@ -77,56 +84,57 @@ export function MonthlySalesChart({ data }: MonthlySalesChartProps) {
   }
 
   return (
-    <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
+    <ChartContainer
+      config={chartConfig}
+      className="aspect-auto h-[250px] w-full"
+    >
+      <LineChart
+        data={data}
+        margin={{
+          top: 5,
+          right: 30,
+          left: 20,
+          bottom: 5,
+        }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke={isDark ? "#1f2937" : "#e5e7eb"}
+        />
+        <XAxis
+          dataKey="name"
+          stroke={isDark ? "#9ca3af" : "#6b7280"}
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+        />
+        <YAxis
+          stroke={isDark ? "#9ca3af" : "#6b7280"}
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
+          tickFormatter={(value: number) => `$${value.toLocaleString()}`}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend
+          wrapperStyle={{
+            fontSize: "12px",
+            color: isDark ? "#9ca3af" : "#6b7280",
           }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={isDark ? "#1f2937" : "#e5e7eb"}
-          />
-          <XAxis
-            dataKey="name"
-            stroke={isDark ? "#9ca3af" : "#6b7280"}
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-          />
-          <YAxis
-            stroke={isDark ? "#9ca3af" : "#6b7280"}
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: isDark ? "#9ca3af" : "#6b7280", fontSize: 12 }}
-            tickFormatter={(value: number) => `$${value.toLocaleString()}`}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{
-              fontSize: "12px",
-              color: isDark ? "#9ca3af" : "#6b7280",
-            }}
-            iconType="line"
-          />
-          <Line
-            type="monotone"
-            dataKey="total"
-            name="Ventas"
-            stroke="#3b82f6"
-            strokeWidth={3}
-            dot={{ r: 4, fill: "#3b82f6" }}
-            activeDot={{ r: 6, fill: "#3b82f6" }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+          iconType="line"
+        />
+        <Line
+          type="monotone"
+          dataKey="total"
+          name="Ventas"
+          stroke="#3b82f6"
+          strokeWidth={3}
+          dot={{ r: 4, fill: "#3b82f6" }}
+          activeDot={{ r: 6, fill: "#3b82f6" }}
+        />
+      </LineChart>
+    </ChartContainer>
   );
 }

@@ -29,9 +29,9 @@ export default function ReportsPage() {
         setLoading(true);
         const [salesByCategoryRes, salesByClientTypeRes, monthlySalesRes] =
           await Promise.all([
-            fetch("/api/dashboard/sales-by-category"),
-            fetch("/api/dashboard/sales-by-size"),
-            fetch("/api/dashboard/monthly-sales"),
+            fetch(`/api/dashboard/sales-by-category?timeRange=${timeRange}`),
+            fetch(`/api/dashboard/sales-by-size?timeRange=${timeRange}`),
+            fetch(`/api/dashboard/monthly-sales?timeRange=${timeRange}`),
           ]);
 
         if (
@@ -57,6 +57,72 @@ export default function ReportsPage() {
 
     fetchData();
   }, [timeRange]);
+
+  const exportToCSV = () => {
+    try {
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `reporte-ventas-${date}.csv`;
+
+      // Preparar los datos para CSV
+      let csvContent = "REPORTE DE VENTAS\n";
+      csvContent += `Fecha de generación: ${new Date().toLocaleString("es-CO")}\n\n`;
+
+      // Ventas por Categoría
+      csvContent += "VENTAS POR CATEGORÍA\n";
+      csvContent += "Categoría,Total Ventas\n";
+      salesByCategory.forEach((item: { name: string; total: number }) => {
+        csvContent += `"${item.name}",${item.total}\n`;
+      });
+      csvContent += "\n";
+
+      // Ventas por Tallas
+      csvContent += "VENTAS POR TALLAS\n";
+      csvContent += "Talla,Cantidad Vendida\n";
+      salesByClientType.forEach((item: { name: string; value: number }) => {
+        csvContent += `"${item.name}",${item.value}\n`;
+      });
+      csvContent += "\n";
+
+      // Ventas Mensuales
+      csvContent += "VENTAS MENSUALES\n";
+      csvContent += "Mes,Total Ventas\n";
+      monthlySales.forEach((item: { month: string; total: number }) => {
+        csvContent += `"${item.month}",${item.total}\n`;
+      });
+      csvContent += "\n";
+
+      // Resumen
+      const totalSales = salesByCategory.reduce(
+        (acc: number, item: { total: number }) => acc + item.total,
+        0,
+      );
+      csvContent += "RESUMEN\n";
+      csvContent += `Total Ventas,${totalSales}\n`;
+      csvContent += `Categorías Activas,${salesByCategory.length}\n`;
+
+      // Crear el blob y descargar
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Reporte exportado exitosamente", {
+        description: `El archivo ${filename} se ha descargado correctamente.`,
+      });
+    } catch (error) {
+      console.error("Error al exportar el reporte:", error);
+      toast.error("Error al exportar el reporte", {
+        description:
+          "No se pudo generar el archivo. Por favor, intenta de nuevo.",
+      });
+    }
+  };
 
   if (loading) {
     return <PageLoading />;
@@ -90,10 +156,11 @@ export default function ReportsPage() {
           <Button
             variant="outline"
             className="h-10 rounded-full w-full sm:w-auto"
-            onClick={() => toast.info("Función de exportar próximamente")}
+            onClick={exportToCSV}
+            disabled={loading}
           >
             <Download className="mr-2 h-4 w-4" />
-            Exportar
+            Exportar CSV
           </Button>
         </div>
       </div>

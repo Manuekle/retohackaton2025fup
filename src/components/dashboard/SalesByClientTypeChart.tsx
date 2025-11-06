@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { useTheme } from "next-themes";
+import { ChartContainer, ChartConfig } from "@/components/ui/chart";
 
 export interface SizeData {
   name: string;
@@ -34,6 +28,12 @@ const COLORS = [
   "#14b8a6", // teal
   "#a855f7", // violet
 ];
+
+const chartConfig: ChartConfig = {
+  value: {
+    label: "Cantidad Vendida",
+  },
+} as const;
 
 const RADIAN = Math.PI / 180;
 
@@ -166,8 +166,11 @@ export function SalesBySizeChart({ data }: SalesBySizeChartProps) {
     total > 0 ? ((leastSold.value / total) * 100).toFixed(1) : "0";
 
   return (
-    <div className="w-full h-80 space-y-4">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full space-y-4">
+      <ChartContainer
+        config={chartConfig}
+        className="aspect-auto h-[280px] w-full"
+      >
         <PieChart>
           <Pie
             data={sortedData}
@@ -175,8 +178,8 @@ export function SalesBySizeChart({ data }: SalesBySizeChartProps) {
             cy="50%"
             labelLine={false}
             label={renderCustomizedLabel}
-            outerRadius={100}
-            innerRadius={50}
+            outerRadius={90}
+            innerRadius={45}
             paddingAngle={3}
             dataKey="value"
             nameKey="name"
@@ -208,10 +211,10 @@ export function SalesBySizeChart({ data }: SalesBySizeChartProps) {
             iconType="circle"
           />
         </PieChart>
-      </ResponsiveContainer>
+      </ChartContainer>
 
       {/* Información de tallas más y menos vendidas */}
-      <div className="flex items-center justify-center gap-6 mt-4">
+      <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
         <div
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
             isDark

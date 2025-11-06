@@ -4,7 +4,29 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth";
 import { withPrismaRetry } from "@/lib/database/prisma-retry";
 
-export async function GET() {
+function getDateRange(timeRange: string) {
+  const now = new Date();
+
+  switch (timeRange) {
+    case "month":
+      return {
+        gte: new Date(now.getFullYear(), now.getMonth(), 1),
+      };
+    case "quarter":
+      const quarter = Math.floor(now.getMonth() / 3);
+      return {
+        gte: new Date(now.getFullYear(), quarter * 3, 1),
+      };
+    case "year":
+      return {
+        gte: new Date(now.getFullYear(), 0, 1),
+      };
+    default:
+      return undefined;
+  }
+}
+
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -12,8 +34,14 @@ export async function GET() {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const timeRange = searchParams.get("timeRange") || "all";
+
+    const dateRange = getDateRange(timeRange);
+
     const sales = await withPrismaRetry(() =>
       prisma.sale.findMany({
+        where: dateRange ? { date: dateRange } : undefined,
         orderBy: { date: "asc" },
       }),
     );
