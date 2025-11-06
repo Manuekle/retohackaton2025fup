@@ -195,7 +195,7 @@ export default function CartPage() {
             <h2 className="text-xl font-bold tracking-heading text-gray-900 dark:text-white mb-2">
               Tu carrito está vacío
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               Agrega productos a tu carrito para comenzar a comprar
             </p>
             <Button
@@ -226,7 +226,7 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-3 mb-3">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-base text-gray-900 dark:text-white mb-2">
+                          <h3 className="font-semibold text-xs text-gray-900 dark:text-white mb-2">
                             {item.name}
                           </h3>
                           {item.size && (
@@ -240,13 +240,13 @@ export default function CartPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4 mb-4">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatCurrency(item.price)} c/u
                         </p>
                         <span className="text-gray-300 dark:text-gray-700">
                           •
                         </span>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           Cantidad: {item.quantity}
                         </p>
                       </div>
@@ -266,7 +266,7 @@ export default function CartPage() {
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </Button>
-                          <span className="w-10 text-center text-sm font-semibold text-gray-900 dark:text-white">
+                          <span className="w-10 text-center text-xs font-semibold text-gray-900 dark:text-white">
                             {item.quantity}
                           </span>
                           <Button
@@ -320,17 +320,17 @@ export default function CartPage() {
 
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between items-center py-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       Subtotal ({cart.length}{" "}
                       {cart.length === 1 ? "producto" : "productos"}):
                     </span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    <span className="text-xs font-medium text-gray-900 dark:text-white">
                       {formatCurrency(getTotal())}
                     </span>
                   </div>
                   <div className="border-t border-gray-200 dark:border-gray-800 pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-base font-bold text-gray-900 dark:text-white">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">
                         Total:
                       </span>
                       <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
@@ -343,7 +343,7 @@ export default function CartPage() {
 
               {/* Información del Cliente */}
               <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-                <h3 className="text-base font-bold tracking-heading mb-4 text-gray-900 dark:text-white">
+                <h3 className="text-xs font-bold tracking-heading mb-4 text-gray-900 dark:text-white">
                   Información del Cliente
                 </h3>
 
@@ -356,7 +356,7 @@ export default function CartPage() {
                       placeholder="Ingresa tu nombre completo"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="rounded-full h-10 text-sm"
+                      className="rounded-full h-10 text-xs"
                       required
                     />
                   </div>
@@ -369,7 +369,7 @@ export default function CartPage() {
                       placeholder="tu@email.com"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="rounded-full h-10 text-sm"
+                      className="rounded-full h-10 text-xs"
                       required
                     />
                   </div>
@@ -382,7 +382,7 @@ export default function CartPage() {
                       placeholder="+57 300 000 0000"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="rounded-full h-10 text-sm"
+                      className="rounded-full h-10 text-xs"
                     />
                   </div>
                   <div>
@@ -393,7 +393,7 @@ export default function CartPage() {
                       placeholder="Dirección de entrega"
                       value={customerAddress}
                       onChange={(e) => setCustomerAddress(e.target.value)}
-                      className="rounded-full h-10 text-sm"
+                      className="rounded-full h-10 text-xs"
                     />
                   </div>
                   {clientTypes.length > 0 && (
@@ -407,7 +407,7 @@ export default function CartPage() {
                           setSelectedClientType(value === "none" ? "" : value)
                         }
                       >
-                        <SelectTrigger className="rounded-full h-10 text-sm">
+                        <SelectTrigger className="rounded-full h-10 text-xs">
                           <SelectValue placeholder="Seleccionar tipo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -426,7 +426,7 @@ export default function CartPage() {
 
               {/* Botón de Compra */}
               <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full h-12 font-semibold text-sm shadow-sm hover:shadow-md transition-all"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full h-12 font-semibold text-xs shadow-sm hover:shadow-md transition-all"
                 onClick={handleCheckout}
                 disabled={
                   isProcessing || !customerName.trim() || !customerEmail.trim()

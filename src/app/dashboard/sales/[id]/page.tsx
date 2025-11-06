@@ -188,7 +188,7 @@ export default function SaleDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Información de la Venta */}
         <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-          <h2 className="text-base font-bold tracking-heading text-gray-900 dark:text-white mb-5">
+          <h2 className="text-xs font-bold tracking-heading text-gray-900 dark:text-white mb-5">
             Información de la Venta
           </h2>
           <div className="space-y-4">
@@ -200,7 +200,7 @@ export default function SaleDetailPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                   Fecha
                 </p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                <p className="text-xs font-semibold text-gray-900 dark:text-white">
                   {format(new Date(sale.createdAt), "PPp", { locale: es })}
                 </p>
               </div>
@@ -214,7 +214,7 @@ export default function SaleDetailPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                     Tipo de Cliente
                   </p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
                     {sale.clientType.name}
                   </p>
                 </div>
@@ -239,7 +239,7 @@ export default function SaleDetailPage() {
         {/* Información del Cliente */}
         {sale.customer ? (
           <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-            <h2 className="text-base font-bold tracking-heading text-gray-900 dark:text-white mb-5">
+            <h2 className="text-xs font-bold tracking-heading text-gray-900 dark:text-white mb-5">
               Información del Cliente
             </h2>
             <div className="space-y-4">
@@ -251,7 +251,7 @@ export default function SaleDetailPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                     Nombre
                   </p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
                     {sale.customer.name}
                   </p>
                 </div>
@@ -265,7 +265,7 @@ export default function SaleDetailPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                       Email
                     </p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
                       {sale.customer.email}
                     </p>
                   </div>
@@ -280,7 +280,7 @@ export default function SaleDetailPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                       Teléfono
                     </p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
                       {sale.customer.phone}
                     </p>
                   </div>
@@ -295,7 +295,7 @@ export default function SaleDetailPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                       Dirección
                     </p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
                       {sale.customer.address}
                     </p>
                   </div>
@@ -305,10 +305,10 @@ export default function SaleDetailPage() {
           </div>
         ) : (
           <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-            <h2 className="text-base font-bold tracking-heading text-gray-900 dark:text-white mb-5">
+            <h2 className="text-xs font-bold tracking-heading text-gray-900 dark:text-white mb-5">
               Información del Cliente
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               No hay información de cliente disponible
             </p>
           </div>
@@ -318,7 +318,7 @@ export default function SaleDetailPage() {
       {/* Items de la Venta */}
       <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-base font-bold tracking-heading text-gray-900 dark:text-white">
+          <h2 className="text-xs font-bold tracking-heading text-gray-900 dark:text-white">
             Productos ({sale.items.length})
           </h2>
         </div>
@@ -351,7 +351,7 @@ export default function SaleDetailPage() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white mb-1">
                         {item.product.name}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -360,22 +360,22 @@ export default function SaleDetailPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900 dark:text-white">
+                    <span className="text-xs text-gray-900 dark:text-white">
                       {item.size || "N/A"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <span className="text-xs font-semibold text-gray-900 dark:text-white">
                       {item.quantity}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className="text-sm text-gray-900 dark:text-white">
+                    <span className="text-xs text-gray-900 dark:text-white">
                       {formatCurrency(item.price)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
                       {formatCurrency(item.quantity * item.price)}
                     </span>
                   </td>
@@ -386,7 +386,7 @@ export default function SaleDetailPage() {
               <tr>
                 <td
                   colSpan={4}
-                  className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white"
+                  className="px-6 py-4 text-right text-xs font-semibold text-gray-900 dark:text-white"
                 >
                   Total:
                 </td>

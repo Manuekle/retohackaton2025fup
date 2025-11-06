@@ -61,11 +61,18 @@ export function HomeContent() {
           <p className="text-xs sm:text-lg md:text-xl tracking-card text-muted-foreground mb-6 sm:mb-8">
             Solución de análisis de inventario y ventas.
           </p>
-          <Link href="/login" legacyBehavior>
-            <a className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-xs font-semibold text-primary-foreground bg-primary rounded-full hover:opacity-90 transition-opacity">
-              Iniciar Sesión
-            </a>
-          </Link>
+          <div className="flex md:flex-row flex-col items-center gap-2 w-full justify-center mb-6 sm:mb-8">
+            <Link href="/login" legacyBehavior>
+              <a className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-xs font-semibold text-primary-foreground bg-primary rounded-full hover:opacity-90 transition-opacity">
+                Iniciar Sesión
+              </a>
+            </Link>
+            <Link href="/shop" legacyBehavior>
+              <a className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-xs font-semibold text-primary-foreground bg-primary rounded-full hover:opacity-90 transition-opacity">
+                Ver Productos
+              </a>
+            </Link>
+          </div>
         </div>
 
         {/* Sponsors Carousel */}

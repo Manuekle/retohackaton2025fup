@@ -152,7 +152,7 @@ export default function PurchasesPage() {
             <h2 className="text-xl font-bold tracking-heading text-gray-900 dark:text-white mb-2">
               Inicia sesión para ver tus compras
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               Necesitas iniciar sesión para acceder a tu historial de compras
             </p>
             <Button
@@ -206,7 +206,7 @@ export default function PurchasesPage() {
             <h2 className="text-xl font-bold tracking-heading text-gray-900 dark:text-white mb-2">
               No tienes compras aún
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
               Comienza a comprar productos y verás tu historial aquí
             </p>
             <Button
@@ -226,7 +226,7 @@ export default function PurchasesPage() {
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                      <h3 className="text-xs font-bold text-gray-900 dark:text-white">
                         Compra #{purchase.id.slice(0, 8)}
                       </h3>
                       {getStatusBadge(purchase.status)}

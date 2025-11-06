@@ -201,7 +201,7 @@ export default function ShopPage() {
                     >
                       <DropdownMenuLabel className="px-4 py-3">
                         <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-semibold leading-none text-gray-900 dark:text-white">
+                          <p className="text-xs font-semibold leading-none text-gray-900 dark:text-white">
                             {session.user?.name || "Usuario"}
                           </p>
                           <p className="text-xs leading-none text-gray-500 dark:text-gray-400">
@@ -246,7 +246,7 @@ export default function ShopPage() {
                 <Button
                   variant="ghost"
                   onClick={() => router.push("/login")}
-                  className="rounded-full text-xs sm:text-sm"
+                  className="rounded-full text-xs sm:text-xs"
                 >
                   Iniciar Sesión
                 </Button>
@@ -305,7 +305,7 @@ export default function ShopPage() {
         {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <p className="text-gray-500 dark:text-gray-400 text-xs">
               No se encontraron productos
             </p>
           </div>
@@ -317,7 +317,7 @@ export default function ShopPage() {
                 className="group border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200"
               >
                 <div className="p-5">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-xs">
                     {product.name}
                   </h3>
                   {product.description && (

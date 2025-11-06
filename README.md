@@ -8,6 +8,9 @@ Este proyecto es una solución de software tipo web desarrollada para el Reto Ha
 - **Análisis de Ventas:** Gráficos que muestran las ventas por categoría, por tipo de cliente (género) y las tendencias de ventas mensuales.
 - **Recomendaciones Automáticas:** Sistema que identifica productos con alta y baja rotación, sugiriendo acciones como aumentar stock o aplicar descuentos.
 - **Autenticación Segura:** Sistema de inicio de sesión con credenciales (email y contraseña) para proteger el acceso al dashboard.
+- **Roles de Usuario:** Sistema de roles (admin y customer) con acceso diferenciado a funcionalidades.
+- **Tienda Pública:** Sección pública para que los clientes puedan ver productos, agregar al carrito y realizar compras.
+- **Historial de Compras:** Los clientes pueden ver su historial de compras y detalles de cada pedido.
 - **Modo Claro y Oscuro:** Interfaz con soporte para temas claro y oscuro para una mejor experiencia de usuario.
 - **Diseño Responsive:** Interfaz completamente responsive que se adapta a dispositivos móviles, tablets y desktop.
 - **Diseño Minimalista:** Estética limpia y moderna inspirada en el Twitter de 2016.
@@ -85,16 +88,32 @@ npx prisma migrate dev
 
 ### 6. Poblar la Base de Datos (Seeding)
 
-Ejecuta el script de seeding para poblar la base de datos con datos de muestra (un usuario y más de 100 ventas aleatorias).
+Ejecuta el script de seeding para poblar la base de datos con datos de muestra (usuarios, productos, clientes y más de 150 ventas aleatorias).
 
 ```bash
 npx prisma db seed
 ```
 
-El usuario creado por defecto es:
+**Nota:** El seed genera datos con:
 
-- **Email:** `admin@example.com`
+- Precios en COP (Pesos Colombianos): entre 20.000 y 500.000 COP
+- Fechas de ventas: solo del año 2025 (desde enero hasta la fecha actual)
+
+Los usuarios creados por defecto son:
+
+**Administrador:**
+
+- **Email:** `admin@gmail.com`
 - **Contraseña:** `password123`
+- **Rol:** `admin` (acceso al dashboard)
+
+**Cliente:**
+
+- **Email:** `customer@gmail.com`
+- **Contraseña:** `password123`
+- **Rol:** `customer` (acceso a la tienda pública)
+
+**Nota:** Las credenciales de demo también se muestran en la página de login para facilitar las pruebas.
 
 ### 7. Ejecutar el Proyecto
 
@@ -135,6 +154,10 @@ prueba-hack/
 │   │   │   └── settings/     # Configuración
 │   │   ├── login/            # Página de inicio de sesión
 │   │   ├── register/         # Página de registro
+│   │   ├── shop/             # Tienda pública
+│   │   │   ├── cart/         # Carrito de compras
+│   │   │   ├── purchases/    # Historial de compras del cliente
+│   │   │   └── settings/     # Configuración del cliente
 │   │   ├── layout.tsx        # Layout principal
 │   │   ├── page.tsx          # Página principal
 │   │   ├── metadata.ts       # Metadata global
@@ -390,23 +413,26 @@ Obtiene todas las ventas con sus items, cliente y productos.
 
 #### `POST /api/sales`
 
-Crea una nueva venta y actualiza el stock de los productos.
+Crea una nueva venta y actualiza el stock de los productos. Si se proporciona información del cliente (`customerName`, `customerEmail`), se busca o crea automáticamente el cliente.
 
 **Body:**
 
 ```json
 {
-  "customerId": "customer_id",
-  "branchId": "branch_id",
-  "clientTypeId": "client_type_id",
+  "customerId": "customer_id", // Opcional: si se proporciona, se usa este cliente
+  "customerName": "María García", // Opcional: para crear/buscar cliente
+  "customerEmail": "maria@gmail.com", // Opcional: para crear/buscar cliente
+  "customerPhone": "+57 300 123 4567", // Opcional
+  "customerAddress": "Calle 123", // Opcional
+  "clientTypeId": "client_type_id", // Opcional
   "total": "150000",
-  "date": "2025-01-15",
+  "date": "2025-01-15", // Opcional: por defecto fecha actual
   "items": [
     {
       "productId": "product_id",
       "quantity": "2",
       "price": "50000",
-      "size": "M"
+      "size": "M" // Opcional
     }
   ]
 }
@@ -419,6 +445,43 @@ Crea una nueva venta y actualiza el stock de los productos.
 Obtiene una venta específica por ID con todos sus detalles.
 
 **Response:** `200 OK` o `404 Not Found`
+
+#### `GET /api/sales/my-purchases`
+
+Obtiene todas las compras del usuario autenticado (basado en el email de la sesión).
+
+**Headers:**
+
+- Requiere autenticación (sesión activa)
+
+**Response:** `200 OK`
+
+```json
+[
+  {
+    "id": "sale_id",
+    "total": 150000,
+    "status": "completed",
+    "createdAt": "2025-01-15T10:00:00.000Z",
+    "customer": {
+      "name": "María García",
+      "email": "maria@gmail.com"
+    },
+    "items": [
+      {
+        "id": "item_id",
+        "product": {
+          "name": "Camiseta",
+          "id": "product_id"
+        },
+        "quantity": 2,
+        "price": 50000,
+        "size": "M"
+      }
+    ]
+  }
+]
+```
 
 ---
 
@@ -673,6 +736,7 @@ npm run test:e2e     # Ejecuta tests E2E
 - **Animaciones Suaves:** Transiciones y animaciones fluidas con Framer Motion.
 - **UI Moderna:** Componentes UI modernos basados en Radix UI y shadcn/ui.
 - **Formularios Validados:** Todos los formularios tienen validación con Zod y feedback visual.
+- **Moneda:** Todos los precios y montos se muestran en COP (Pesos Colombianos) con formato de miles.
 
 ## 🔒 Seguridad
 
