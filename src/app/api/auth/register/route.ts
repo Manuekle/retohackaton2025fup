@@ -40,11 +40,28 @@ export async function POST(req: Request) {
       }),
     );
 
-    // Si el customer existe y ya tiene un userId, no podemos conectarlo
+    // Si el customer existe y ya tiene un userId, significa que ya hay un usuario asociado
     if (existingCustomer && existingCustomer.userId) {
-      return NextResponse.json(
-        { message: "Este email ya está asociado a una cuenta" },
-        { status: 409 },
+      // Verificar si el usuario asociado existe
+      const associatedUser = await withPrismaRetry(() =>
+        prisma.user.findUnique({
+          where: { id: existingCustomer.userId! },
+        }),
+      );
+
+      if (associatedUser) {
+        return NextResponse.json(
+          { message: "Este email ya está asociado a una cuenta" },
+          { status: 409 },
+        );
+      }
+      // Si el usuario no existe pero el customer tiene userId, actualizar el customer
+      // para remover el userId y luego crear el nuevo usuario
+      await withPrismaRetry(() =>
+        prisma.customer.update({
+          where: { id: existingCustomer.id },
+          data: { userId: null },
+        }),
       );
     }
 
