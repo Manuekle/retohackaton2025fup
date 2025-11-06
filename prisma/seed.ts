@@ -33,6 +33,7 @@ async function seed() {
       name: "Admin User",
       password: adminPassword,
       role: "admin",
+      // Admin no necesita customer asociado
     },
   });
   console.log(`Created admin user: ${adminUser.email} (password: password123)`);
@@ -43,6 +44,16 @@ async function seed() {
       name: "Customer User",
       password: customerPassword,
       role: "customer",
+      // Crear customer asociado para el usuario customer
+      customer: {
+        create: {
+          name: "Customer User",
+          email: "customer@gmail.com",
+        },
+      },
+    },
+    include: {
+      customer: true,
     },
   });
   console.log(

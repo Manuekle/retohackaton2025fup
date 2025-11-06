@@ -40,6 +40,9 @@ export async function POST(request: Request) {
       date,
     } = await request.json();
 
+    // Obtener la sesión del usuario si está autenticado
+    const session = await getServerSession(authOptions);
+
     // Crear la venta
     const sale = await prisma.$transaction(async (prisma) => {
       // 1. Buscar o crear el cliente
@@ -56,6 +59,20 @@ export async function POST(request: Request) {
         });
 
         if (!customer) {
+          // Buscar si existe un usuario con este email para asociarlo
+          let userId: string | null = null;
+          if (session?.user?.email === customerEmail) {
+            userId = session.user.id;
+          } else {
+            const user = await prisma.user.findUnique({
+              where: { email: customerEmail },
+              select: { id: true },
+            });
+            if (user) {
+              userId = user.id;
+            }
+          }
+
           // Crear nuevo cliente
           customer = await prisma.customer.create({
             data: {
@@ -63,16 +80,32 @@ export async function POST(request: Request) {
               email: customerEmail,
               phone: customerPhone || null,
               address: customerAddress || null,
+              userId: userId,
             },
           });
         } else {
           // Actualizar cliente existente si se proporcionan más datos
+          // Si hay un usuario autenticado y el cliente no tiene userId, asociarlo
+          let userId = customer.userId;
+          if (!userId && session?.user?.email === customerEmail) {
+            userId = session.user.id;
+          } else if (!userId) {
+            const user = await prisma.user.findUnique({
+              where: { email: customerEmail },
+              select: { id: true },
+            });
+            if (user) {
+              userId = user.id;
+            }
+          }
+
           customer = await prisma.customer.update({
             where: { id: customer.id },
             data: {
               name: customerName,
               phone: customerPhone || customer.phone,
               address: customerAddress || customer.address,
+              userId: userId || customer.userId,
             },
           });
         }

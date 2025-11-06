@@ -11,20 +11,23 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // Buscar el customer por email del usuario
-    const customer = await prisma.customer.findUnique({
+    // Buscar el usuario para obtener su customer asociado
+    const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      include: {
+        customer: true,
+      },
     });
 
-    if (!customer) {
-      // Si no hay customer, retornar array vacío
+    if (!user || !user.customer) {
+      // Si no hay customer asociado, retornar array vacío
       return NextResponse.json([]);
     }
 
     // Obtener todas las ventas de este customer
     const sales = await prisma.sale.findMany({
       where: {
-        customerId: customer.id,
+        customerId: user.customer.id,
       },
       include: {
         customer: true,

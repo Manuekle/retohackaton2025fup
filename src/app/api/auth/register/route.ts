@@ -29,12 +29,31 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     console.log("Creating user...");
+
+    // Verificar si ya existe un customer con este email
+    const existingCustomer = await prisma.customer.findUnique({
+      where: { email },
+    });
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         role: "customer", // Nuevos usuarios son customer por defecto
+        customer: existingCustomer
+          ? {
+              connect: { id: existingCustomer.id },
+            }
+          : {
+              create: {
+                name,
+                email,
+              },
+            },
+      },
+      include: {
+        customer: true,
       },
     });
 

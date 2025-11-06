@@ -48,6 +48,8 @@ model Customer {
   email     String?  @unique
   phone     String?
   address   String?
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   sales     Sale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -90,6 +92,8 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  customer      Customer?
 }
 
 model Size {
@@ -111,4 +115,3 @@ model ProductSize {
 
   @@unique([productId, sizeId])
 }
-e
